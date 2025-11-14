@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { createVoxelWorld } from './src/scene.js';
 import { setupPlayerControls } from './src/PlayerControl.js';
+import { createHammer } from './src/hammer.js';
 
 // Basic setup
 const scene = new THREE.Scene();
@@ -22,6 +23,21 @@ document.body.appendChild(renderer.domElement);
 
 // Create the world
 createVoxelWorld(scene);
+
+// Add camera to scene
+scene.add(camera);
+
+// Create hammer
+const hammer = createHammer(scene);
+
+// Add hammer to camera
+scene.remove(hammer);
+camera.add(hammer);
+
+// Position hammer to be in hand
+hammer.position.set(1.5, -1, -3);
+hammer.rotation.set(0, Math.PI / 2, 0); 
+camera.position.set(0, 10, 25);
 
 // Player movement setup
 const { updatePlayerMovement, yawObject } = setupPlayerControls(camera, renderer.domElement);
