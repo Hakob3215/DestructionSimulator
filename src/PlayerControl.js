@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 
-export function setupWASDControls(camera) {
+export function setupPlayerControls(camera, rendererDomElement) {
+    // Player movement setup
     const keys = { 
         w: false, 
         a: false, 
@@ -16,15 +17,45 @@ export function setupWASDControls(camera) {
         keys[event.key.toLowerCase()] = false;
     });
 
+    // Mouse look setup
+    //let yAxisRotation = 0;   // rotation around Y axis
+    let xRotation = 0;   // rotation around X axis
+    const sensitivity = 0.002;
+
+    // Create a parent Object3D for y rotation
+    const yRotationObject = new THREE.Object3D();
+    yRotationObject.position.copy(camera.position);
+    yRotationObject.add(camera);
+
+    // Pointer lock for proper mouse input
+    rendererDomElement.addEventListener("click", () => {
+        rendererDomElement.requestPointerLock();
+    });
+
+
+    document.addEventListener("mousemove", (event) => {
+        if (document.pointerLockElement !== rendererDomElement) return;
+
+        // Yaw rotates the parent object
+        yRotationObject.rotation.y -= event.movementX * sensitivity;
+        xRotation -= event.movementY * sensitivity;
+
+        // Clamp xAxisRotation so camera doesn't flip
+        const limit = Math.PI / 2 - 0.01;
+        xRotation = Math.max(-limit, Math.min(limit, xRotation));
+
+        camera.rotation.x = xRotation
+    });
+
     const direction = new THREE.Vector3();
     const velocity = new THREE.Vector3();
-    const playerSpeed = 30;
+    const playerSpeed = 25;
 
     function updatePlayerMovement(time) {
         direction.set(0, 0, 0);
 
-        if (keys.w) direction.z -= 1;
-        if (keys.s) direction.z += 1;
+        if (keys.w) direction.z += 1;
+        if (keys.s) direction.z -= 1;
         if (keys.a) direction.x -= 1;
         if (keys.d) direction.x += 1;
 
@@ -33,9 +64,18 @@ export function setupWASDControls(camera) {
             direction.normalize();
         }
 
-        velocity.copy(direction).multiplyScalar(playerSpeed * time);
-        camera.position.add(velocity);
+        // Calculate forward and right vectors based on yaw
+        const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(yRotationObject.quaternion);
+        const right   = new THREE.Vector3(1, 0, 0).applyQuaternion(yRotationObject.quaternion);
+
+        // Combine movement
+        velocity.set(0, 0, 0);
+        velocity.addScaledVector(forward, direction.z * playerSpeed * time);    // Forward and Back
+        velocity.addScaledVector(right,   direction.x * playerSpeed * time);    // Left and Right
+
+        // Apply movement to camera
+        yRotationObject.position.add(velocity);
     }
 
-    return { updatePlayerMovement };
+    return { updatePlayerMovement, yawObject: yRotationObject };
 }

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { createVoxelWorld } from './src/scene.js';
-import { setupWASDControls } from './src/PlayerControl.js';
+import { setupPlayerControls } from './src/PlayerControl.js';
 
 // Basic setup
 const scene = new THREE.Scene();
@@ -14,10 +14,13 @@ document.body.appendChild(renderer.domElement);
 // Create the world
 createVoxelWorld(scene);
 
-camera.position.set(0, 10, 25);
+camera.position.set(0, 8, 0);
 
-// WASD movement setup
-const { updatePlayerMovement } = setupWASDControls(camera);
+// Player movement setup
+const { updatePlayerMovement, yawObject } = setupPlayerControls(camera, renderer.domElement);
+
+// Add the yawObject (camera parent) to the scene
+scene.add(yawObject);
 
 // Animation loop
 const clock = new THREE.Clock();
