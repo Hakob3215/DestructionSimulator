@@ -13,7 +13,7 @@ const defaultCameraRotation = new THREE.Euler(0, 0, 0);
 camera.position.copy(defaultCameraPosition);
 camera.rotation.copy(defaultCameraRotation);
 
-camera.lookAt(new THREE.Vector3(50, 0, 0)); 
+//camera.lookAt(new THREE.Vector3(50, 0, 0)); 
 
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
