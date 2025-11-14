@@ -1,0 +1,9 @@
+# Dependencies
+/node_modules
+
+# Lockfiles
+/package-lock.json
+
+# Vite
+.vite/
+dist/
