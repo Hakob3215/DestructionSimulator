@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export function setupPlayerControls(camera, rendererDomElement) {
+export function setupPlayerControls(camera, rendererDomElement, colliders, playerBox) {
     // Player movement setup
     const keys = { 
         w: false, 
@@ -73,8 +73,27 @@ export function setupPlayerControls(camera, rendererDomElement) {
         velocity.addScaledVector(forward, direction.z * playerSpeed * time);    // Forward and Back
         velocity.addScaledVector(right,   direction.x * playerSpeed * time);    // Left and Right
 
-        // Apply movement to camera
+        // Apply Movement to Camera
+        const oldPos = yRotationObject.position.clone();
+
+        // Apply Movement to Player
         yRotationObject.position.add(velocity);
+
+        // Update Hitbot
+        playerBox.setFromCenterAndSize(
+            yRotationObject.position,
+            new THREE.Vector3(1, 3, 1)
+        );
+
+        // COLLISION CHECK
+        for (const collider of colliders) {
+            if (playerBox.intersectsBox(collider)) {
+                // COLLISION → RESTORE OLD POSITION
+                yRotationObject.position.copy(oldPos);
+                updatePlayerBox();
+                break;
+            }
+        }
     }
 
     return { updatePlayerMovement, yawObject: yRotationObject };

@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 
 export function createVoxelWorld(scene) {
+
+    const colliders = [];
+
     // Create ground plane
     const planeGeometry = new THREE.PlaneGeometry(100, 100);
     const planeMaterial = new THREE.MeshStandardMaterial({ color: 0xcccccc, side: THREE.DoubleSide });
@@ -33,6 +36,9 @@ export function createVoxelWorld(scene) {
                 cube.castShadow = true;
                 cube.receiveShadow = true;
                 scene.add(cube);
+
+                const box = new THREE.Box3().setFromObject(cube);
+                colliders.push(box);
             }
         }
     }
@@ -49,4 +55,7 @@ export function createVoxelWorld(scene) {
     // Configure shadow properties for the light
     directionalLight.shadow.mapSize.width = 2048;
     directionalLight.shadow.mapSize.height = 2048;
+
+
+    return colliders;
 }
