@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createVoxelWorld } from './src/scene.js';
+import { setupWASDControls } from './src/PlayerControl.js';
 
 // Basic setup
 const scene = new THREE.Scene();
@@ -15,10 +16,17 @@ createVoxelWorld(scene);
 
 camera.position.set(0, 10, 25);
 
+// WASD movement setup
+const { updatePlayerMovement } = setupWASDControls(camera);
+
 // Animation loop
 const clock = new THREE.Clock();
 function animate() {
     requestAnimationFrame(animate);
+
+	const time = clock.getDelta();
+	updatePlayerMovement(time);
+
     renderer.render(scene, camera);
 }
 
