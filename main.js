@@ -8,7 +8,7 @@ const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerH
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 
 // Save the default camera position & rotation
-const defaultCameraPosition = new THREE.Vector3(0, 10, 25);
+const defaultCameraPosition = new THREE.Vector3(0, 10, 0);
 const defaultCameraRotation = new THREE.Euler(0, 0, 0);
 
 camera.position.copy(defaultCameraPosition);
@@ -22,8 +22,6 @@ document.body.appendChild(renderer.domElement);
 
 // Create the world
 createVoxelWorld(scene);
-
-camera.position.set(0, 8, 0);
 
 // Player movement setup
 const { updatePlayerMovement, yawObject } = setupPlayerControls(camera, renderer.domElement);
