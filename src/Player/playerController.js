@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { translationMatrix, rotationMatrixY } from './transformationMatrices';
+import { translationMatrix, rotationMatrixY } from '../transformationMatrices';
 
 export function setupPlayerControls(camera, rendererDomElement) {
     // Player movement setup
@@ -53,7 +53,7 @@ export function setupPlayerControls(camera, rendererDomElement) {
         camera.rotation.x = xRotation
 
         // Recompute matrixWorld
-        //playerObject.updateMatrixWorld();
+        playerObject.updateMatrixWorld();
     });
 
     const playerSpeed = 25;
