@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { createVoxelWorld } from './src/scene.js';
-import { setupPlayerControls } from './src/playerControl.js';
+import { setupPlayerControls } from './src/playerController.js';
 import { createHammer } from './src/hammer.js';
 
 // Basic setup
@@ -37,13 +37,13 @@ camera.add(hammer);
 // Position hammer to be in hand
 hammer.position.set(1.5, -1, -3);
 hammer.rotation.set(0, Math.PI / 2, 0); 
-camera.position.set(0, 10, 25);
 
 // Player movement setup
-const { updatePlayerMovement, yawObject } = setupPlayerControls(camera, renderer.domElement);
+const { updatePlayerMovement, yawObject: playerObject } = setupPlayerControls(camera, renderer.domElement);
 
-// Add the yawObject (camera parent) to the scene
-scene.add(yawObject);
+// Add the playerObject (camera parent) to the scene
+scene.add(playerObject);
+playerObject.position.set(0, 10, 25);
 
 // Animation loop
 const clock = new THREE.Clock();
@@ -69,14 +69,14 @@ document.addEventListener('keydown', onKeyDown, false);
 function onKeyDown(event) {
     switch (event.key) {
         case '0': // Reset camera
-            resetCamera();
+            resetPlayer();
             break;
     }
 }
 
-function resetCamera() {
-    camera.position.copy(defaultCameraPosition);
-    camera.rotation.copy(defaultCameraRotation);
+function resetPlayer() {
+    playerObject.position.copy(defaultCameraPosition);
+    playerObject.rotation.copy(defaultCameraRotation);
 }
 
 animate();

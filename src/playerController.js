@@ -18,14 +18,13 @@ export function setupPlayerControls(camera, rendererDomElement) {
     });
 
     // Mouse look setup
-    //let yAxisRotation = 0;   // rotation around Y axis
     let xRotation = 0;   // rotation around X axis
     const sensitivity = 0.002;
 
-    // Create a parent Object3D for y rotation
-    const yRotationObject = new THREE.Object3D();
-    yRotationObject.position.copy(camera.position);
-    yRotationObject.add(camera);
+    // Create a player Object3D for y rotation
+    const playerObject = new THREE.Object3D();
+    playerObject.position.copy(camera.position);
+    playerObject.add(camera);
 
     // Pointer lock for proper mouse input
     rendererDomElement.addEventListener("click", () => {
@@ -33,14 +32,16 @@ export function setupPlayerControls(camera, rendererDomElement) {
     });
 
 
+    // Detects when mouse is moved
     document.addEventListener("mousemove", (event) => {
+        // Makes sure mouse is locked to screen
         if (document.pointerLockElement !== rendererDomElement) return;
 
         // Yaw rotates the parent object
-        yRotationObject.rotation.y -= event.movementX * sensitivity;
+        playerObject.rotation.y -= event.movementX * sensitivity;
         xRotation -= event.movementY * sensitivity;
 
-        // Clamp xAxisRotation so camera doesn't flip
+        // Clamps xRotation so camera doesn't flip
         const limit = Math.PI / 2 - 0.01;
         xRotation = Math.max(-limit, Math.min(limit, xRotation));
 
@@ -65,8 +66,8 @@ export function setupPlayerControls(camera, rendererDomElement) {
         }
 
         // Calculate forward and right vectors based on yaw
-        const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(yRotationObject.quaternion);
-        const right   = new THREE.Vector3(1, 0, 0).applyQuaternion(yRotationObject.quaternion);
+        const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(playerObject.quaternion);
+        const right   = new THREE.Vector3(1, 0, 0).applyQuaternion(playerObject.quaternion);
 
         // Combine movement
         velocity.set(0, 0, 0);
@@ -74,8 +75,8 @@ export function setupPlayerControls(camera, rendererDomElement) {
         velocity.addScaledVector(right,   direction.x * playerSpeed * time);    // Left and Right
 
         // Apply movement to camera
-        yRotationObject.position.add(velocity);
+        playerObject.position.add(velocity);
     }
 
-    return { updatePlayerMovement, yawObject: yRotationObject };
+    return { updatePlayerMovement, yawObject: playerObject };
 }
