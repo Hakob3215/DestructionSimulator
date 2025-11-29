@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { createVoxelWorld } from './src/scene.js';
-import { setupPlayerControls } from './src/playerController.js';
+import { setupPlayerControls } from './src/movement/playerController.js';
 import { createHammer } from './src/hammer.js';
 
 // Basic setup
