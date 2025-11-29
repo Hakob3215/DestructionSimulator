@@ -15,6 +15,10 @@ const defaultCameraRotation = new THREE.Euler(0, 0, 0);
 camera.position.copy(defaultCameraPosition);
 camera.rotation.copy(defaultCameraRotation);
 
+// Save the default player position & rotation
+const defaultPlayerPosition = new THREE.Vector3(0, 10, 0);
+const defaultPlayerRotation = new THREE.Euler(0, 0, 0);
+
 //camera.lookAt(new THREE.Vector3(50, 0, 0)); 
 
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -43,7 +47,7 @@ const { updatePlayerMovement, yawObject: playerObject } = setupPlayerControls(ca
 
 // Add the playerObject (camera parent) to the scene
 scene.add(playerObject);
-playerObject.position.set(0, 10, 25);
+playerObject.position.copy(defaultPlayerPosition);
 
 // Animation loop
 const clock = new THREE.Clock();
@@ -75,8 +79,8 @@ function onKeyDown(event) {
 }
 
 function resetPlayer() {
-    playerObject.position.copy(defaultCameraPosition);
-    playerObject.rotation.copy(defaultCameraRotation);
+    playerObject.position.copy(defaultPlayerPosition);
+    playerObject.rotation.copy(defaultPlayerRotation);
 }
 
 animate();
