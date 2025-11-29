@@ -43,11 +43,15 @@ hammer.position.set(1.5, -1, -3);
 hammer.rotation.set(0, Math.PI / 2, 0); 
 
 // Player movement setup
-const { updatePlayerMovement, yawObject: playerObject } = setupPlayerControls(camera, renderer.domElement);
+const { updatePlayerMovement, yawObject: playerObject, playerBox } = setupPlayerControls(camera, renderer.domElement);
 
 // Add the playerObject (camera parent) to the scene
 scene.add(playerObject);
 playerObject.position.copy(defaultPlayerPosition);
+
+// Helper to see hitbox of the Player
+const playerHelper = new THREE.Box3Helper(playerBox, 0x00ff00);
+scene.add(playerHelper);
 
 // Animation loop
 const clock = new THREE.Clock();
@@ -56,6 +60,11 @@ function animate() {
 
 	const time = clock.getDelta();
 	updatePlayerMovement(time);
+    checkCollisions(); // check for collisions
+
+    // Update helper because its moving
+    playerHelper.box.copy(playerBox);
+    playerHelper.updateMatrixWorld(true);
 
     renderer.render(scene, camera);
 }
@@ -70,15 +79,33 @@ window.addEventListener('resize', () => {
 // Handle keyboard input
 document.addEventListener('keydown', onKeyDown, false);
 
-function onKeyDown(event) {
+function onKeyDown(event) { 
     switch (event.key) {
-        case '0': // Reset camera
+        case '0': // Reset camera (Broken for now)
             resetPlayer();
             break;
     }
 }
 
-function resetPlayer() {
+function checkCollisions() {
+    if (!playerBox) return;
+
+    let collided = false;
+
+    scene.traverse(obj => {
+        if (obj.userData.boundingBox) {
+            if (playerBox.intersectsBox(obj.userData.boundingBox)) {
+                collided = true;
+            }
+        }
+    });
+
+    if (collided) {
+        console.log("COLLISION!");
+    }
+}
+
+function resetPlayer() { // Broken for now
     playerObject.position.copy(defaultPlayerPosition);
     playerObject.rotation.copy(defaultPlayerRotation);
 }

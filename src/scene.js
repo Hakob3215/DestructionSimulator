@@ -32,7 +32,16 @@ export function createVoxelWorld(scene) {
 
                 cube.castShadow = true;
                 cube.receiveShadow = true;
+                
+                cube.userData.boundingBox = new THREE.Box3().setFromObject(cube); // add hitbox (HAVE TO UPDATE HITBOX OF OBJ LATER FOR WHEN THEY MOVE)
                 scene.add(cube);
+
+                // Helper to see hitbox of the cube
+                const cubeHelper = new THREE.Box3Helper(
+                    cube.userData.boundingBox,
+                    0xffff00
+                );
+                scene.add(cubeHelper);
             }
         }
     }

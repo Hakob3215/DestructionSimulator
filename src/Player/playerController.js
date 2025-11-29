@@ -10,6 +10,9 @@ export function setupPlayerControls(camera, rendererDomElement) {
         d: false 
     };
 
+    const playerBox = new THREE.Box3(); // hitbox
+    const playerBoxSize = new THREE.Vector3(2, 4, 2); // hitbox size (adjust later)
+
     // Track key states
     document.addEventListener("keydown", event => {
         keys[event.key.toLowerCase()] = true;
@@ -90,7 +93,13 @@ export function setupPlayerControls(camera, rendererDomElement) {
             playerObject.quaternion,
             playerObject.scale
         );
+        
+        // Update the player's hitbox
+        playerBox.setFromCenterAndSize(
+        playerObject.position,
+        playerBoxSize
+        );
     }
 
-    return { updatePlayerMovement, yawObject: playerObject };
+    return { updatePlayerMovement, yawObject: playerObject, playerBox };
 }
