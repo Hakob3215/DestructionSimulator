@@ -152,6 +152,13 @@ window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
+// Handle mouse click for grenade throw
+document.addEventListener("mousedown", (e) => {
+    if (e.button === 2) {  // Right Click
+        throwGrenade();
+    }
+});
+
 // Handle mouse click for hammer swing
 document.addEventListener('mousedown', () => {
     if (!isSwinging) {
@@ -169,6 +176,57 @@ function onKeyDown(event) {
             resetScene();
             break;
     }
+}
+
+function throwGrenade() {
+    // Clone grenade model (keep original in hand)
+    const thrown = grenade.clone(true);
+
+    // Ensure materials are cloned so transparency & animation work independently
+    thrown.traverse(obj => {
+        if (obj.isMesh) {
+            obj.material = obj.material.clone();
+        }
+    });
+
+    // Add to scene
+    scene.add(thrown);
+
+    // Position grenade at camera hand position
+    const worldPos = new THREE.Vector3();
+    leftHand.getWorldPosition(worldPos);
+    thrown.position.copy(worldPos);
+
+    // Face same direction as camera
+    thrown.quaternion.copy(camera.quaternion);
+
+    // Initialize physics properties
+    thrown.userData.boundingBox = new THREE.Box3().setFromObject(thrown);
+    thrown.userData.isHit = true;               // so static list ignores it
+    thrown.userData.velocity = new THREE.Vector3();
+    thrown.userData.angularVelocity = new THREE.Vector3();
+    thrown.userData.life = 8.0;                // grenade lasts for 8 seconds
+    thrown.userData.isGrenade = true;
+
+    // Apply forward throw impulse
+    const throwForce = 25;
+    const forward = new THREE.Vector3();
+    camera.getWorldDirection(forward);  // Get world-space forward
+    thrown.userData.velocity.copy(forward.multiplyScalar(throwForce));
+
+    // Add slight upward arc
+    thrown.userData.velocity.y += 8;
+
+    // Add random spin
+    thrown.userData.angularVelocity.set(
+        (Math.random() - 0.5) * 5,
+        (Math.random() - 0.5) * 5,
+        (Math.random() - 0.5) * 5,
+    );
+
+    // Register into physics engine
+    if (!scene.userData.physicsObjects) scene.userData.physicsObjects = [];
+    scene.userData.physicsObjects.push(thrown);
 }
 
 function checkHammerCollisions() {
@@ -384,6 +442,20 @@ function updatePhysics(time) {
 
             if (distSq < minDistSq) {
                 // Collision detected!
+                
+                if (movingObj.userData.isGrenade) {
+
+                    // Trigger explosion at grenade position
+                    triggerExplosion(movingObj.position, 50, 5.0); // explosion force & radius
+
+                    // Remove grenade object
+                    if (movingObj.parent) movingObj.parent.remove(movingObj);
+
+                    // Remove from physics list
+                    scene.userData.physicsObjects.splice(i, 1);
+
+                    continue;  // skip rest of collision logic
+                }
                 
                 // Calculate impact direction
                 const impactDirection = staticObj.position.clone().sub(movingObj.position).normalize();
