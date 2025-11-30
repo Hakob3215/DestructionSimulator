@@ -11,7 +11,8 @@ export function createVoxelWorld() {
     plane.receiveShadow = true;
     worldGroup.add(plane);
 
-    // Create a grid of cubes
+    // Create a grid of cubes (REMOVED - Loading from level.txt instead)
+    /*
     const gridSize = 8;
     const cubeSize = 1;
     const spacing = 0.01;
@@ -77,6 +78,89 @@ export function createVoxelWorld() {
             worldGroup.add(cubeHelper);
         }
     }
+    */
+
+    // Load Level from Text File
+    fetch('/level.txt') 
+        .then(response => response.text())
+        .then(text => {
+            const voxelGeo = new THREE.BoxGeometry(1, 1, 1);
+            const voxelMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
+
+            // Goxel txt format: X Y Z RRGGBB
+            const lines = text.split('\n');
+            
+            lines.forEach(line => {
+                // Remove comments or empty lines
+                if (line.startsWith('#') || line.trim() === '') return;
+
+                const parts = line.trim().split(/\s+/);
+                if (parts.length >= 3) {
+                    // Goxel coordinates: X Y Z
+                    // In Three.js: Y is up. In Goxel Z is usually up.
+                    // Let's assume Goxel Z -> Three.js Y, and Goxel Y -> Three.js Z
+                    // Or just map directly if Goxel was configured for Y-up.
+                    // Based on your file: -11 -11 0. The 3rd coord is 0, 1, 2... likely height (Y).
+                    // Wait, looking at the file:
+                    // -8 -3 1
+                    // -8 -3 2
+                    // -8 -3 3
+                    // The 3rd coordinate is increasing like layers. So 3rd coord is definitely Height (Y in ThreeJS).
+                    
+                    const x = parseFloat(parts[0]);
+                    const z = parseFloat(parts[1]); 
+                    const y = parseFloat(parts[2]); 
+                    
+                    // Parse color
+                    let color = 0x888888;
+                    if (parts.length >= 4) {
+                        // Goxel exports hex string without # usually, or with it.
+                        // Your file has "ffffff".
+                        let colorStr = parts[3];
+                        if (!colorStr.startsWith('#')) {
+                            colorStr = '#' + colorStr;
+                        }
+                        color = new THREE.Color(colorStr);
+                    }
+
+                    const mat = voxelMat.clone();
+                    mat.color.set(color);
+
+                    const voxel = new THREE.Mesh(voxelGeo, mat);
+                    
+                    // Adjust position
+                    // Goxel coordinates are integers. Three.js cubes are size 1 centered at 0.5.
+                    // We might need to offset by 0.5 if we want them to align perfectly with grid lines,
+                    // but for physics it doesn't matter much as long as they don't overlap.
+                    // Let's add 0.5 to Y so they sit ON the plane (if lowest Y is 0).
+                    // Your file has Z (height) starting at 0.
+                    
+                    voxel.position.set(x, y + 0.5, z); 
+                    
+                    voxel.castShadow = true;
+                    voxel.receiveShadow = true;
+
+                    // Physics Data
+                    voxel.userData.boundingBox = new THREE.Box3();
+                    voxel.userData.boundingBox.setFromObject(voxel);
+                    voxel.userData.isHit = false;
+
+                    worldGroup.add(voxel);
+                    
+                    // Add helper (hidden by default, toggled with 'H')
+                    const cubeHelper = new THREE.Box3Helper(
+                        voxel.userData.boundingBox,
+                        0xffff00
+                    );
+                    cubeHelper.visible = false; // Start hidden
+                    // We need to tag it so our toggle logic finds it
+                    // The toggle logic checks for obj.type === 'Box3Helper', which is standard.
+                    worldGroup.add(cubeHelper);
+                }
+            });
+        })
+        .catch(err => console.error("Failed to load level:", err));
+
 
 
     const ambientLight = new THREE.AmbientLight(0x404040, 2); // soft white light
