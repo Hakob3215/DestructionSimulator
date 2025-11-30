@@ -173,8 +173,9 @@ function updatePhysics(time) {
         scene.userData.physicsObjects = [];
     }
 
-    // Initialize static voxels list if not exists
-    if (!scene.userData.staticVoxels) {
+    // Initialize static voxels list if not exists or empty (and scene has children)
+    // Since we load asynchronously, we might need to rebuild this list once the level loads
+    if (!scene.userData.staticVoxels || (scene.userData.staticVoxels.length === 0 && scene.children.length > 0)) {
         scene.userData.staticVoxels = [];
         scene.traverse(obj => {
             if (obj.userData.boundingBox && !obj.userData.isHit) {
