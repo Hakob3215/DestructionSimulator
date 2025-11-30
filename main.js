@@ -306,6 +306,11 @@ function updatePhysics(time) {
         if (obj.userData.life !== undefined) {
             obj.userData.life -= time;
             if (obj.userData.life <= 0) {
+                // Remove from scene and trigger explosion of grenade
+                if (obj.userData.isGrenade) {
+                    triggerExplosion(obj.position, 20, 3.0);
+                }
+
                 // Remove from scene and physics list
                 if (obj.parent) {
                     obj.parent.remove(obj);
