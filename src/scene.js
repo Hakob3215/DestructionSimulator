@@ -46,6 +46,36 @@ export function createVoxelWorld(scene) {
         }
     }
 
+    // Create a separate wall for testing
+    const wallWidth = 10;
+    const wallHeight = 5;
+    const wallZ = -10; // Position the wall behind the main grid (relative to camera start)
+
+    for (let x = 0; x < wallWidth; x++) {
+        for (let y = 0; y < wallHeight; y++) {
+            const cubeMaterial = new THREE.MeshStandardMaterial({ color: 0x882222 }); // Reddish wall
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+
+            cube.position.set(
+                offset + x * (cubeSize + spacing),
+                cubeSize / 2 + y * (cubeSize + spacing),
+                wallZ
+            );
+
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            
+            cube.userData.boundingBox = new THREE.Box3().setFromObject(cube);
+            scene.add(cube);
+
+            const cubeHelper = new THREE.Box3Helper(
+                cube.userData.boundingBox,
+                0xff0000 // Red helper for wall
+            );
+            scene.add(cubeHelper);
+        }
+    }
+
 
     const ambientLight = new THREE.AmbientLight(0x404040, 2); // soft white light
     scene.add(ambientLight);

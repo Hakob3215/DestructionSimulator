@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { translationMatrix, rotationMatrixY } from '../transformationMatrices';
 
 export function setupPlayerControls(camera, rendererDomElement) {
     // Player movement setup
@@ -10,8 +9,23 @@ export function setupPlayerControls(camera, rendererDomElement) {
         d: false 
     };
 
-    const playerBox = new THREE.Box3(); // hitbox
-    const playerBoxSize = new THREE.Vector3(2, 4, 2); // hitbox size (adjust later)
+    const playerSpeed = 10.0;
+    const sensitivity = 0.002;
+
+    // Create a playerObject (Group) to represent the player's body
+    // This object handles position and Y-rotation (Yaw)
+    const playerObject = new THREE.Group();
+    playerObject.position.copy(camera.position); // Start at camera's initial world position
+    
+    // Reset camera to local origin of the player object
+    // The camera now handles X-rotation (Pitch)
+    camera.position.set(0, 0, 0);
+    camera.rotation.set(0, 0, 0);
+    playerObject.add(camera);
+
+    // Hitbox
+    const playerBox = new THREE.Box3();
+    const playerBoxSize = new THREE.Vector3(1, 2, 1); // Size of the player
 
     // Track key states
     document.addEventListener("keydown", event => {
@@ -21,85 +35,69 @@ export function setupPlayerControls(camera, rendererDomElement) {
         keys[event.key.toLowerCase()] = false;
     });
 
-    // Mouse look setup
-    let xRotation = 0;   // rotation around X axis
-    const sensitivity = 0.002;
-
-    // Create a playerObject for y rotation
-    const playerObject = new THREE.Object3D();
-    playerObject.matrixAutoUpdate = false;  // Have to control playerObject manually now
-    playerObject.position.copy(camera.position);
-    playerObject.updateMatrix();
-
-    playerObject.add(camera);
-
     // Pointer lock for proper mouse input
     rendererDomElement.addEventListener("click", () => {
         rendererDomElement.requestPointerLock();
     });
 
-
-    // Detects when the mouse is moved
+    // Mouse movement handler
     document.addEventListener("mousemove", (event) => {
-        // Makes sure mouse is locked to screen before detect movement
         if (document.pointerLockElement !== rendererDomElement) return;
 
-        // Rotates playerObject vertically
-        const playerAngleY = -event.movementX * sensitivity;
-        const playerYMatrix = rotationMatrixY(playerAngleY);
-        playerObject.matrix.multiply(playerYMatrix);
+        // Rotate player body left/right (Yaw)
+        playerObject.rotation.y -= event.movementX * sensitivity;
 
-        // Rotates camera horizontally
-        xRotation -= event.movementY * sensitivity;
+        // Rotate camera up/down (Pitch)
+        camera.rotation.x -= event.movementY * sensitivity;
+        
+        // Clamp pitch to avoid flipping
         const limit = Math.PI / 2 - 0.01;
-        xRotation = Math.max(-limit, Math.min(limit, xRotation));   // Clamps xRotation so camera doesn't flip
-        camera.rotation.x = xRotation
-
-        // Recompute matrixWorld
-        playerObject.updateMatrixWorld();
+        camera.rotation.x = Math.max(-limit, Math.min(limit, camera.rotation.x));
     });
 
-    const playerSpeed = 25;
-
-    function updatePlayerMovement(time) {
-        // Movement direction
+    function updatePlayerMovement(time, onCheckCollision) {
         const direction = new THREE.Vector3();
-
-        if (keys.w) direction.z -= 1;
-        if (keys.s) direction.z += 1;
-        if (keys.a) direction.x -= 1;
-        if (keys.d) direction.x += 1;
-
-        // Normalize so diagonal movementis same speed
-        if (direction.length() > 0) {
-            direction.normalize();
-        } else {
-            return; // no movement
-        }
-
-        const moveX = direction.x * playerSpeed * time;
-        const moveZ = direction.z * playerSpeed * time;
-
-        // if no movement, skip matrix operations
-        if (moveX === 0 && moveZ === 0) return;
-
-        const movementMatrix = translationMatrix(moveX, 0, moveZ);
-        playerObject.matrix.multiply(movementMatrix);
-        playerObject.updateMatrixWorld(true);
-
-        // Decompose matrix so ThreeJS updates camera position
-        playerObject.matrix.decompose(
-            playerObject.position,
-            playerObject.quaternion,
-            playerObject.scale
-        );
         
-        // Update the player's hitbox
-        playerBox.setFromCenterAndSize(
-        playerObject.position,
-        playerBoxSize
-        );
+        // Get forward and right vectors relative to the player's rotation
+        const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(playerObject.quaternion);
+        const right = new THREE.Vector3(1, 0, 0).applyQuaternion(playerObject.quaternion);
+
+        // Flatten to XZ plane so looking up/down doesn't affect movement direction
+        forward.y = 0;
+        forward.normalize();
+        right.y = 0;
+        right.normalize();
+
+        if (keys.w) direction.add(forward);
+        if (keys.s) direction.sub(forward);
+        if (keys.d) direction.add(right);
+        if (keys.a) direction.sub(right);
+
+        if (direction.lengthSq() > 0) {
+            direction.normalize();
+            const moveVector = direction.multiplyScalar(playerSpeed * time);
+
+            // Move X
+            const oldX = playerObject.position.x;
+            playerObject.position.x += moveVector.x;
+            playerBox.setFromCenterAndSize(playerObject.position, playerBoxSize);
+            
+            if (onCheckCollision && onCheckCollision()) {
+                playerObject.position.x = oldX; // Revert X
+                playerBox.setFromCenterAndSize(playerObject.position, playerBoxSize);
+            }
+
+            // Move Z
+            const oldZ = playerObject.position.z;
+            playerObject.position.z += moveVector.z;
+            playerBox.setFromCenterAndSize(playerObject.position, playerBoxSize);
+
+            if (onCheckCollision && onCheckCollision()) {
+                playerObject.position.z = oldZ; // Revert Z
+                playerBox.setFromCenterAndSize(playerObject.position, playerBoxSize);
+            }
+        }
     }
 
-    return { updatePlayerMovement, yawObject: playerObject, playerBox };
+    return { updatePlayerMovement, playerObject, playerBox, playerBoxSize };
 }
