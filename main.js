@@ -26,7 +26,8 @@ renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 
 // Create the world
-createVoxelWorld(scene);
+let worldGroup = createVoxelWorld();
+scene.add(worldGroup);
 
 // Add camera to scene
 scene.add(camera);
@@ -117,8 +118,8 @@ document.addEventListener('keydown', onKeyDown, false);
 
 function onKeyDown(event) { 
     switch (event.key) {
-        case '0': // Reset camera (Broken for now)
-            resetPlayer();
+        case '0': // Reset Scene
+            resetScene();
             break;
     }
 }
@@ -195,7 +196,9 @@ function updatePhysics(time) {
             obj.userData.life -= time;
             if (obj.userData.life <= 0) {
                 // Remove from scene and physics list
-                scene.remove(obj);
+                if (obj.parent) {
+                    obj.parent.remove(obj);
+                }
                 scene.userData.physicsObjects.splice(i, 1);
                 continue;
             }
@@ -450,7 +453,33 @@ function checkCollisions() {
     return collided;
 }
 
-function resetPlayer() { // Broken for now
+function resetScene() {
+    // Remove old world
+    if (worldGroup) {
+        scene.remove(worldGroup);
+        
+        // Optional: Dispose of geometries and materials to prevent memory leaks
+        worldGroup.traverse(obj => {
+            if (obj.geometry) obj.geometry.dispose();
+            if (obj.material) {
+                if (Array.isArray(obj.material)) {
+                    obj.material.forEach(m => m.dispose());
+                } else {
+                    obj.material.dispose();
+                }
+            }
+        });
+    }
+
+    // Recreate world
+    worldGroup = createVoxelWorld();
+    scene.add(worldGroup);
+
+    // Reset physics state
+    scene.userData.physicsObjects = [];
+    scene.userData.staticVoxels = null; // Will be rebuilt in updatePhysics
+
+    // Reset player
     playerObject.position.copy(defaultPlayerPosition);
     playerObject.rotation.copy(defaultPlayerRotation);
 }

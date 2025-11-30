@@ -1,13 +1,15 @@
 import * as THREE from 'three';
 
-export function createVoxelWorld(scene) {
+export function createVoxelWorld() {
+    const worldGroup = new THREE.Group();
+
     // Create ground plane
     const planeGeometry = new THREE.PlaneGeometry(100, 100);
     const planeMaterial = new THREE.MeshStandardMaterial({ color: 0xcccccc, side: THREE.DoubleSide });
     const plane = new THREE.Mesh(planeGeometry, planeMaterial);
     plane.rotation.x = -Math.PI / 2; // Rotate to be horizontal
     plane.receiveShadow = true;
-    scene.add(plane);
+    worldGroup.add(plane);
 
     // Create a grid of cubes
     const gridSize = 8;
@@ -34,14 +36,14 @@ export function createVoxelWorld(scene) {
                 cube.receiveShadow = true;
                 
                 cube.userData.boundingBox = new THREE.Box3().setFromObject(cube); // add hitbox (HAVE TO UPDATE HITBOX OF OBJ LATER FOR WHEN THEY MOVE)
-                scene.add(cube);
+                worldGroup.add(cube);
 
                 // Helper to see hitbox of the cube
                 const cubeHelper = new THREE.Box3Helper(
                     cube.userData.boundingBox,
                     0xffff00
                 );
-                scene.add(cubeHelper);
+                worldGroup.add(cubeHelper);
             }
         }
     }
@@ -66,26 +68,28 @@ export function createVoxelWorld(scene) {
             cube.receiveShadow = true;
             
             cube.userData.boundingBox = new THREE.Box3().setFromObject(cube);
-            scene.add(cube);
+            worldGroup.add(cube);
 
             const cubeHelper = new THREE.Box3Helper(
                 cube.userData.boundingBox,
                 0xff0000 // Red helper for wall
             );
-            scene.add(cubeHelper);
+            worldGroup.add(cubeHelper);
         }
     }
 
 
     const ambientLight = new THREE.AmbientLight(0x404040, 2); // soft white light
-    scene.add(ambientLight);
+    worldGroup.add(ambientLight);
 
     const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
     directionalLight.position.set(10, 20, 5);
     directionalLight.castShadow = true;
-    scene.add(directionalLight);
+    worldGroup.add(directionalLight);
 
     // Configure shadow properties for the light
     directionalLight.shadow.mapSize.width = 2048;
     directionalLight.shadow.mapSize.height = 2048;
+
+    return worldGroup;
 }
