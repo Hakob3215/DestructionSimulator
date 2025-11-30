@@ -160,10 +160,12 @@ document.addEventListener("mousedown", (e) => {
 });
 
 // Handle mouse click for hammer swing
-document.addEventListener('mousedown', () => {
-    if (!isSwinging) {
-        isSwinging = true;
-        hammerSwingSound.clone(true).play();
+document.addEventListener('mousedown', (e) => {
+    if (e.button === 0) { // LEFT CLICK ONLY
+        if (!isSwinging) {
+            isSwinging = true;
+            hammerSwingSound.clone(true).play();
+        }
     }
 });
 
