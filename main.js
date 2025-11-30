@@ -7,6 +7,11 @@ import { createHammer } from './src/Weapons/hammer.js';
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
+const listener = new THREE.AudioListener();
+const audioLoader = new THREE.AudioLoader();
+
+// Chnages skybox color to sky blue
+scene.background = new THREE.Color(0x87CEEB);
 
 // Save the default camera position & rotation
 const defaultCameraPosition = new THREE.Vector3(0, 4, 10);
@@ -14,6 +19,9 @@ const defaultCameraRotation = new THREE.Euler(0, 0, 0);
 
 camera.position.copy(defaultCameraPosition);
 camera.rotation.copy(defaultCameraRotation);
+
+// Attaches audio listener to camera
+camera.add(listener);
 
 // Save the default player position & rotation
 const defaultPlayerPosition = new THREE.Vector3(0, 4, 10);
@@ -58,6 +66,23 @@ scene.add(playerObject);
 // Helper to see hitbox of the Player
 const playerHelper = new THREE.Box3Helper(playerBox, 0x00ff00);
 scene.add(playerHelper);
+
+// Loads sound files
+// SFX for swinging hammer
+const hammerSwingSound = new THREE.Audio( listener );
+audioLoader.load('./src/Audio/SFX/hammerSwing.mp3', function( buffer ) {
+    hammerSwingSound.setBuffer(buffer);
+    hammerSwingSound.setLoop(false);
+    hammerSwingSound.setVolume(1.0);
+});
+
+// SFX for hitting stone object
+const rockSmashSound = new THREE.Audio( listener );
+audioLoader.load('./src/Audio/SFX/rockSmash.mp3', function( buffer ) {
+    rockSmashSound.setBuffer(buffer);
+    rockSmashSound.setLoop(false);
+    rockSmashSound.setVolume(1.0);
+});
 
 // Animation loop
 const clock = new THREE.Clock();
@@ -110,6 +135,7 @@ window.addEventListener('resize', () => {
 document.addEventListener('mousedown', () => {
     if (!isSwinging) {
         isSwinging = true;
+        hammerSwingSound.clone(true).play();
     }
 });
 
@@ -140,6 +166,9 @@ function checkHammerCollisions() {
             
             // Use explosion logic for hammer hit too!
             triggerExplosion(object.position, 15, 2.0); // Strong force, radius 2
+            
+            // Plays 
+            rockSmashSound.clone(true).play();
             
             break; // Only hit one voxel per swing
         }

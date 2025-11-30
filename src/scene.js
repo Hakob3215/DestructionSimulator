@@ -160,16 +160,26 @@ export function createVoxelWorld() {
             });
         })
         .catch(err => console.error("Failed to load level:", err));
-
-
+    
 
     const ambientLight = new THREE.AmbientLight(0x404040, 2); // soft white light
     worldGroup.add(ambientLight);
 
     const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
-    directionalLight.position.set(10, 20, 5);
+    directionalLight.position.set(100, 200, 50);
     directionalLight.castShadow = true;
     worldGroup.add(directionalLight);
+
+    const sunGeometry = new THREE.SphereGeometry(8, 32, 32);
+    const glowingSunMaterial = new THREE.MeshPhongMaterial({
+        color: 0xFFFF00, // Yellow color
+        emissive: 0xFFFF00 // Yellow glowing effect
+    });
+
+    const sunMesh = new THREE.Mesh(sunGeometry, glowingSunMaterial);
+    // Attaches sun to the directional light
+    // Feel free to change directional light position
+    directionalLight.add(sunMesh);
 
     // Configure shadow properties for the light
     directionalLight.shadow.mapSize.width = 2048;
