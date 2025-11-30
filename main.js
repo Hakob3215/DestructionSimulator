@@ -179,6 +179,11 @@ function onKeyDown(event) {
             break;
     }
 }
+// Explosion Variables
+const grenadeExplosionForce = 75.0;
+const grenadeExplosionRadius = 5.0
+const hammerExplosionForce = 15.0;
+const hammerExplosionRadius = 2.0;
 
 function throwGrenade() {
     // Clone grenade model (keep original in hand)
@@ -207,7 +212,7 @@ function throwGrenade() {
     thrown.userData.isHit = true;               // so static list ignores it
     thrown.userData.velocity = new THREE.Vector3();
     thrown.userData.angularVelocity = new THREE.Vector3();
-    thrown.userData.life = 8.0;                // grenade lasts for 8 seconds
+    thrown.userData.life = 4.0;                // grenade lasts for 4 seconds
     thrown.userData.isGrenade = true;
 
     // Apply forward throw impulse
@@ -246,7 +251,7 @@ function checkHammerCollisions() {
             console.log("Hammer hit voxel!");
             
             // Use explosion logic for hammer hit too!
-            triggerExplosion(object.position, 15, 2.0); // Strong force, radius 2
+            triggerExplosion(object.position, hammerExplosionForce, hammerExplosionRadius); // Strong force, radius 2
             
             // Plays 
             rockSmashSound.clone(true).play();
@@ -308,7 +313,7 @@ function updatePhysics(time) {
             if (obj.userData.life <= 0) {
                 // Remove from scene and trigger explosion of grenade
                 if (obj.userData.isGrenade) {
-                    triggerExplosion(obj.position, 20, 3.0);
+                    triggerExplosion(obj.position, grenadeExplosionForce, grenadeExplosionRadius);
                 }
 
                 // Remove from scene and physics list
@@ -453,7 +458,7 @@ function updatePhysics(time) {
                 if (movingObj.userData.isGrenade) {
 
                     // Trigger explosion at grenade position
-                    triggerExplosion(movingObj.position, 50, 5.0); // explosion force & radius
+                    triggerExplosion(movingObj.position, grenadeExplosionForce, grenadeExplosionRadius); // explosion force & radius
 
                     // Remove grenade object
                     if (movingObj.parent) movingObj.parent.remove(movingObj);
