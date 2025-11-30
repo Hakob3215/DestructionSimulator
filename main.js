@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { createVoxelWorld } from './src/scene.js';
 import { setupPlayerControls } from './src/Player/playerController.js';
 import { createHammer } from './src/Weapons/hammer.js';
+import { createCartoonBomb } from './src/Weapons/grenade.js';
+import { createDynamite } from './src/Weapons/grenade.js';
 
 // Basic setup
 const scene = new THREE.Scene();
@@ -42,6 +44,25 @@ camera.add(hammer);
 // Position hammer to be in hand
 hammer.position.set(1.5, -1, -3);
 hammer.rotation.set(0, Math.PI / 2, 0); 
+
+// put grenade in leftHand
+const leftHand = new THREE.Group();
+camera.add(leftHand);
+
+// Position the grenade hand relative to the camera (adjust as needed)
+leftHand.position.set(-1.2, -1, -3);
+leftHand.rotation.set(0, 0, 0);
+
+// Create grenade (choose one)
+//const grenade = createCartoonBomb();
+const grenade = createDynamite();
+
+leftHand.add(grenade);
+
+// Adjust grenade position inside the hand
+grenade.position.set(0, 0, 0);
+grenade.rotation.set(0, 0, 0);
+grenade.scale.set(0.4, 0.4, 0.4);
 
 // Hammer swing animation variables
 let isSwinging = false;
