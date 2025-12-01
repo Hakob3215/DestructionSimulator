@@ -77,6 +77,9 @@ let isSwinging = false;
 const swingDuration = 0.3; // seconds
 let swingTimer = 0;
 
+// List to store active explosion effects
+const activeExplosions = [];
+
 // Player movement setup
 const { updatePlayerMovement, playerObject, playerBox, playerBoxSize } = setupPlayerControls(camera, renderer.domElement);
 
@@ -102,6 +105,18 @@ audioLoader.load('./src/Audio/SFX/rockSmash.mp3', function( buffer ) {
     rockSmashSound.setBuffer(buffer);
     rockSmashSound.setLoop(false);
     rockSmashSound.setVolume(1.0);
+});
+// Grenade Throw SFX
+const grenadeThrowSound = new THREE.Audio(listener);
+audioLoader.load('./src/Audio/SFX/throw.mp3', function( buffer ) {
+    grenadeThrowSound.setBuffer(buffer);
+    grenadeThrowSound.setLoop(false);
+    grenadeThrowSound.setVolume(1.0);
+});
+// Fuse burn SFX
+let fuseBurnBuffer = null;
+audioLoader.load('./src/Audio/SFX/fuseBurn.mp3', buffer => {
+    fuseBurnBuffer = buffer;
 });
 // Explosion SFX
 let explosionBuffer = null;
@@ -145,6 +160,10 @@ function animate() {
     // Update helper because its moving
     playerHelper.box.copy(playerBox);
     playerHelper.updateMatrixWorld(true);
+    
+    for (const update of activeExplosions) {
+        update(time);
+    }
 
     renderer.render(scene, camera);
 }
@@ -183,18 +202,12 @@ function onKeyDown(event) {
             break;
     }
 }
-// Explosion Variables
-const grenadeExplosionForce = 75.0;
-const grenadeExplosionRadius = 5.0
-const hammerExplosionForce = 15.0;
-const hammerExplosionRadius = 2.0;
-
-function playExplosionAt(position) {
+function playExplosionSoundAt(position) {
     if (!explosionBuffer) return; // buffer not ready yet
 
     const sound = new THREE.PositionalAudio(listener);
     sound.setBuffer(explosionBuffer);
-    sound.setRefDistance(6);    // distance before sounds starts fading
+    sound.setRefDistance(6);    // distance before volume of sound starts decreasing
     sound.setVolume(0.25);
 
     sound.position.copy(position);
@@ -209,12 +222,82 @@ function playExplosionAt(position) {
     };
 }
 
+// Explosion Effect variables
+const explosionLightIntensity = 8;
+const explosionEffectRadius = 5;  
+const explosionEffectDuration = 0.3;
+const castShadows = false;  // Currently false to reduce lag from many explosions (can change later)
+
+function createExplosionEffect(position) {
+    // ---------- Explosion Sphere ----------
+    const sphereGeometry = new THREE.SphereGeometry(1, 32, 32);
+    const sphereMaterial = new THREE.MeshStandardMaterial({
+        color: 0xff5500,
+        emissive: 0xff2200,
+        emissiveIntensity: 2,
+        transparent: true,
+        opacity: 1
+    });
+
+    const explosionSphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+    explosionSphere.position.copy(position);
+    scene.add(explosionSphere);
+
+    // ---------- Explosion Light ----------
+    const explosionLight = new THREE.PointLight(0xffaa55, explosionLightIntensity, 20);
+    explosionLight.castShadow = castShadows; 
+    //explosionLight.shadow.mapSize.width = 256;
+    //explosionLight.shadow.mapSize.height = 256;
+    explosionLight.position.copy(position);
+    scene.add(explosionLight);
+
+    // ---------- Animation state ----------
+    let elapsed = 0;
+
+    // ---------- Update Explosion ----------
+    function updateExplosionEffect(deltaTime) {
+        elapsed += deltaTime;
+
+        const t = elapsed / explosionEffectDuration;
+
+        if (t >= 1) {
+            // Cleanup
+            scene.remove(explosionSphere);
+            explosionSphere.geometry.dispose();
+            explosionSphere.material.dispose();
+
+            scene.remove(explosionLight);
+
+            activeExplosions.splice(activeExplosions.indexOf(updateExplosionEffect), 1);
+            return;
+        }
+
+        // Scale sphere
+        const scale = 1 + t * explosionEffectRadius;
+        explosionSphere.scale.set(scale, scale, scale);
+
+        // Fade opacity
+        explosionSphere.material.opacity = 1 - t;
+
+        // Light fade
+        explosionLight.intensity = explosionLightIntensity * (1 - t);
+    }
+
+    // Register explosion for animation loop
+    activeExplosions.push(updateExplosionEffect);
+}
+
+// Explosion Variables
+const grenadeExplosionForce = 75.0;
+const grenadeExplosionRadius = 5.0
+const hammerExplosionForce = 15.0;
+const hammerExplosionRadius = 2.0;
+
+
+
 function throwGrenade() {
     // Clone grenade model (keep original in hand)
     const thrown = grenade.clone(true);
-
-    // Attaches explosion SFX to grenade
-    //thrown.add(explosionSound);
 
     // Ensure materials are cloned so transparency & animation work independently
     thrown.traverse(obj => {
@@ -223,8 +306,25 @@ function throwGrenade() {
         }
     });
 
+    if (fuseBurnBuffer) {
+        const fuseBurnSound = new THREE.PositionalAudio(listener);
+        fuseBurnSound.setBuffer(fuseBurnBuffer);
+        fuseBurnSound.setRefDistance(4);  // how far until volume decreases
+        fuseBurnSound.setLoop(false);
+        fuseBurnSound.setVolume(1.0);
+
+        thrown.add(fuseBurnSound);
+        fuseBurnSound.play();
+        
+        // Optional: save reference for stopping later on explosion
+        thrown.userData.fuseSound = fuseBurnSound;
+    }
+
     // Add to scene
     scene.add(thrown);
+
+    // Plays throw sounds
+    grenadeThrowSound.clone(true).play();
 
     // Position grenade at camera hand position
     const worldPos = new THREE.Vector3();
@@ -341,7 +441,10 @@ function updatePhysics(time) {
                 // Remove from scene and trigger explosion of grenade
                 if (obj.userData.isGrenade) {
                     triggerExplosion(obj.position, grenadeExplosionForce, grenadeExplosionRadius);
-                    playExplosionAt(obj.position);
+                    createExplosionEffect(obj.position);
+                    playExplosionSoundAt(obj.position);
+                    obj.userData.fuseSound.stop();
+                    obj.userData.fuseSound.disconnect();
                 }
 
                 // Remove from scene and physics list
@@ -488,7 +591,11 @@ function updatePhysics(time) {
                     // Trigger explosion at grenade position
                     triggerExplosion(movingObj.position, grenadeExplosionForce, grenadeExplosionRadius); // explosion force & radius
 
-                    playExplosionAt(movingObj.position);
+                    createExplosionEffect(movingObj.position);
+                    playExplosionSoundAt(movingObj.position);
+
+                    movingObj.userData.fuseSound.stop();
+                    movingObj.userData.fuseSound.disconnect();
 
                     // Remove grenade object
                     if (movingObj.parent) movingObj.parent.remove(movingObj);
