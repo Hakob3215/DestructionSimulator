@@ -195,7 +195,7 @@ function playExplosionAt(position) {
     const sound = new THREE.PositionalAudio(listener);
     sound.setBuffer(explosionBuffer);
     sound.setRefDistance(6);    // distance before sounds starts fading
-    sound.setVolume(0.35);
+    sound.setVolume(0.25);
 
     sound.position.copy(position);
     scene.add(sound);
