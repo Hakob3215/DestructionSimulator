@@ -19,17 +19,27 @@ export function setupPlayerControls(camera, rendererDomElement) {
     
     // Reset camera to local origin of the player object
     // The camera now handles X-rotation (Pitch)
-    camera.position.set(0, 0, 0);
+    camera.position.set(0, 1.8, 0); // Higher camera view (approx 3.8m total height)
     camera.rotation.set(0, 0, 0);
     playerObject.add(camera);
 
     // Hitbox
     const playerBox = new THREE.Box3();
-    const playerBoxSize = new THREE.Vector3(1, 2, 1); // Size of the player
+    const playerBoxSize = new THREE.Vector3(1, 4, 1); // Taller player (4 units tall)
+
+    // Physics variables
+    let velocityY = 0;
+    const gravity = -30.0;
+    const jumpStrength = 12.0;
+    let isGrounded = false;
 
     // Track key states
     document.addEventListener("keydown", event => {
         keys[event.key.toLowerCase()] = true;
+        if (event.code === "Space" && isGrounded) {
+            velocityY = jumpStrength;
+            isGrounded = false;
+        }
     });
     document.addEventListener("keyup", event => {
         keys[event.key.toLowerCase()] = false;
@@ -56,6 +66,42 @@ export function setupPlayerControls(camera, rendererDomElement) {
     });
 
     function updatePlayerMovement(time, onCheckCollision) {
+        // --- 1. Vertical Movement (Gravity & Jumping) ---
+        velocityY += gravity * time;
+        const deltaY = velocityY * time;
+        
+        const oldY = playerObject.position.y;
+        playerObject.position.y += deltaY;
+        playerBox.setFromCenterAndSize(playerObject.position, playerBoxSize);
+
+        // Floor Check (Simple Y check)
+        // Player height is 4.0, center is at 2.0 relative to feet.
+        if (playerObject.position.y < 2.0) {
+            playerObject.position.y = 2.0;
+            velocityY = 0;
+            isGrounded = true;
+            playerBox.setFromCenterAndSize(playerObject.position, playerBoxSize);
+        }
+        // Voxel Collision Check
+        else if (onCheckCollision && onCheckCollision()) {
+            // Collision detected on Y axis
+            playerObject.position.y = oldY;
+            playerBox.setFromCenterAndSize(playerObject.position, playerBoxSize);
+
+            if (velocityY < 0) {
+                // We hit the ground (voxel)
+                isGrounded = true;
+                velocityY = 0;
+            } else {
+                // We hit the ceiling
+                velocityY = 0;
+            }
+        } else {
+            // No collision, we are in the air
+            isGrounded = false;
+        }
+
+        // --- 2. Horizontal Movement ---
         const direction = new THREE.Vector3();
         
         // Get forward and right vectors relative to the player's rotation
@@ -96,6 +142,12 @@ export function setupPlayerControls(camera, rendererDomElement) {
                 playerObject.position.z = oldZ; // Revert Z
                 playerBox.setFromCenterAndSize(playerObject.position, playerBoxSize);
             }
+        }
+        
+        // Kill floor (Reset if falling into void)
+        if (playerObject.position.y < -50) {
+            playerObject.position.set(0, 10, 10);
+            velocityY = 0;
         }
     }
 
