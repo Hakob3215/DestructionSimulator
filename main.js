@@ -90,19 +90,23 @@ scene.add(playerHelper);
 
 // Loads sound files
 // SFX for swinging hammer
-const hammerSwingSound = new THREE.Audio( listener );
+const hammerSwingSound = new THREE.Audio(listener);
 audioLoader.load('./src/Audio/SFX/hammerSwing.mp3', function( buffer ) {
     hammerSwingSound.setBuffer(buffer);
     hammerSwingSound.setLoop(false);
     hammerSwingSound.setVolume(1.0);
 });
-
 // SFX for hitting stone object
-const rockSmashSound = new THREE.Audio( listener );
+const rockSmashSound = new THREE.Audio(listener);
 audioLoader.load('./src/Audio/SFX/rockSmash.mp3', function( buffer ) {
     rockSmashSound.setBuffer(buffer);
     rockSmashSound.setLoop(false);
     rockSmashSound.setVolume(1.0);
+});
+// Explosion SFX
+let explosionBuffer = null;
+audioLoader.load('./src/Audio/SFX/explosion.wav', buffer => {
+    explosionBuffer = buffer;
 });
 
 // Animation loop
@@ -185,9 +189,32 @@ const grenadeExplosionRadius = 5.0
 const hammerExplosionForce = 15.0;
 const hammerExplosionRadius = 2.0;
 
+function playExplosionAt(position) {
+    if (!explosionBuffer) return; // buffer not ready yet
+
+    const sound = new THREE.PositionalAudio(listener);
+    sound.setBuffer(explosionBuffer);
+    sound.setRefDistance(6);    // distance before sounds starts fading
+    sound.setVolume(0.35);
+
+    sound.position.copy(position);
+    scene.add(sound);
+
+    sound.play();
+
+    sound.onEnded = () => {
+        sound.stop();
+        sound.disconnect();     // detach audio nodes
+        scene.remove(sound);    // remove from scene
+    };
+}
+
 function throwGrenade() {
     // Clone grenade model (keep original in hand)
     const thrown = grenade.clone(true);
+
+    // Attaches explosion SFX to grenade
+    //thrown.add(explosionSound);
 
     // Ensure materials are cloned so transparency & animation work independently
     thrown.traverse(obj => {
@@ -253,7 +280,7 @@ function checkHammerCollisions() {
             // Use explosion logic for hammer hit too!
             triggerExplosion(object.position, hammerExplosionForce, hammerExplosionRadius); // Strong force, radius 2
             
-            // Plays 
+            // Plays rock smash sound
             rockSmashSound.clone(true).play();
             
             break; // Only hit one voxel per swing
@@ -314,6 +341,7 @@ function updatePhysics(time) {
                 // Remove from scene and trigger explosion of grenade
                 if (obj.userData.isGrenade) {
                     triggerExplosion(obj.position, grenadeExplosionForce, grenadeExplosionRadius);
+                    playExplosionAt(obj.position);
                 }
 
                 // Remove from scene and physics list
@@ -459,6 +487,8 @@ function updatePhysics(time) {
 
                     // Trigger explosion at grenade position
                     triggerExplosion(movingObj.position, grenadeExplosionForce, grenadeExplosionRadius); // explosion force & radius
+
+                    playExplosionAt(movingObj.position);
 
                     // Remove grenade object
                     if (movingObj.parent) movingObj.parent.remove(movingObj);
