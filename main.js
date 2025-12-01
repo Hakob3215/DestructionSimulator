@@ -228,28 +228,40 @@ const explosionEffectRadius = 5;
 const explosionEffectDuration = 0.3;
 const castShadows = false;  // Currently false to reduce lag from many explosions (can change later)
 
+// Pre-allocate geometry to reduce GC
+const sharedExplosionGeometry = new THREE.SphereGeometry(1, 32, 32);
+// Template material to force shader compilation
+const sharedExplosionMaterial = new THREE.MeshStandardMaterial({
+    color: 0xff5500,
+    emissive: 0xff2200,
+    emissiveIntensity: 2,
+    transparent: true,
+    opacity: 1
+});
+
+// Warm up the renderer with a dummy explosion object
+// This forces the shader for transparent emissive objects to compile immediately
+const dummyExplosion = new THREE.Mesh(sharedExplosionGeometry, sharedExplosionMaterial);
+dummyExplosion.position.set(0, -1000, 0); // Hide it
+dummyExplosion.frustumCulled = false; // Force it to be "rendered" even if off-screen (though Three.js might still cull it)
+scene.add(dummyExplosion);
+
 function createExplosionEffect(position) {
     // ---------- Explosion Sphere ----------
-    const sphereGeometry = new THREE.SphereGeometry(1, 32, 32);
-    const sphereMaterial = new THREE.MeshStandardMaterial({
-        color: 0xff5500,
-        emissive: 0xff2200,
-        emissiveIntensity: 2,
-        transparent: true,
-        opacity: 1
-    });
+    // Clone material so we can fade opacity independently
+    const sphereMaterial = sharedExplosionMaterial.clone();
 
-    const explosionSphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+    const explosionSphere = new THREE.Mesh(sharedExplosionGeometry, sphereMaterial);
     explosionSphere.position.copy(position);
     scene.add(explosionSphere);
 
     // ---------- Explosion Light ----------
-    const explosionLight = new THREE.PointLight(0xffaa55, explosionLightIntensity, 20);
-    explosionLight.castShadow = castShadows; 
-    //explosionLight.shadow.mapSize.width = 256;
-    //explosionLight.shadow.mapSize.height = 256;
-    explosionLight.position.copy(position);
-    scene.add(explosionLight);
+    // const explosionLight = new THREE.PointLight(0xffaa55, explosionLightIntensity, 20);
+    // explosionLight.castShadow = castShadows; 
+    // //explosionLight.shadow.mapSize.width = 256;
+    // //explosionLight.shadow.mapSize.height = 256;
+    // explosionLight.position.copy(position);
+    // scene.add(explosionLight);
 
     // ---------- Animation state ----------
     let elapsed = 0;
@@ -263,10 +275,11 @@ function createExplosionEffect(position) {
         if (t >= 1) {
             // Cleanup
             scene.remove(explosionSphere);
-            explosionSphere.geometry.dispose();
+            // Do NOT dispose geometry as it is shared
+            // explosionSphere.geometry.dispose(); 
             explosionSphere.material.dispose();
 
-            scene.remove(explosionLight);
+            // scene.remove(explosionLight);
 
             activeExplosions.splice(activeExplosions.indexOf(updateExplosionEffect), 1);
             return;
@@ -280,7 +293,7 @@ function createExplosionEffect(position) {
         explosionSphere.material.opacity = 1 - t;
 
         // Light fade
-        explosionLight.intensity = explosionLightIntensity * (1 - t);
+        // explosionLight.intensity = explosionLightIntensity * (1 - t);
     }
 
     // Register explosion for animation loop
@@ -400,13 +413,9 @@ function applyPhysicsToVoxel(voxel) {
     }
     scene.userData.physicsObjects.push(voxel);
 
-    // Remove from staticVoxels list if it exists there
-    if (scene.userData.staticVoxels) {
-        const index = scene.userData.staticVoxels.indexOf(voxel);
-        if (index > -1) {
-            scene.userData.staticVoxels.splice(index, 1);
-        }
-    }
+    // OPTIMIZATION: Do NOT search and remove from staticVoxels here.
+    // The caller (triggerExplosion) is responsible for removing it from the static list.
+    // This avoids an O(N) linear scan for every single block, which causes massive lag.
 }
 
 function updatePhysics(time) {
@@ -552,7 +561,6 @@ function updatePhysics(time) {
     // Optimization: Only check static objects near the moving ones.
     // We can use a simple spatial hash or just check distance to the center of the grid if we know it.
     // But a simpler optimization is to only check static objects that are within a certain range of the moving object.
-    // Even better: We know the grid structure! We can calculate exactly which static voxel *might* be at a position.
     
     // Assuming grid is aligned and cubes are size 1.
     // We can look up if a static voxel exists at the moving object's position.
@@ -663,13 +671,26 @@ function triggerExplosion(center, force, radius) {
     // We need to iterate backwards because we are removing items
     if (!scene.userData.staticVoxels) return;
 
+    const radiusSq = radius * radius;
+
     for (let i = scene.userData.staticVoxels.length - 1; i >= 0; i--) {
         const voxel = scene.userData.staticVoxels[i];
+
+        // Optimization: Quick axis checks to avoid expensive distance calculation
+        if (Math.abs(voxel.position.x - center.x) > radius) continue;
+        if (Math.abs(voxel.position.y - center.y) > radius) continue;
+        if (Math.abs(voxel.position.z - center.z) > radius) continue;
+
         const distSq = voxel.position.distanceToSquared(center);
         
-        if (distSq < radius * radius) {
-            // Remove from static
-            scene.userData.staticVoxels.splice(i, 1);
+        if (distSq < radiusSq) {
+            // Remove from static list using Swap-and-Pop (O(1)) instead of splice (O(N))
+            // This is crucial for performance when many blocks are destroyed at once
+            const lastIndex = scene.userData.staticVoxels.length - 1;
+            if (i < lastIndex) {
+                scene.userData.staticVoxels[i] = scene.userData.staticVoxels[lastIndex];
+            }
+            scene.userData.staticVoxels.pop();
             
             // Calculate explosion force direction
             let dir = voxel.position.clone().sub(center);
