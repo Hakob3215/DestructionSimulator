@@ -53,7 +53,11 @@ renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 
 // Create the world
-let worldGroup = createVoxelWorld();
+let worldGroup = createVoxelWorld((count) => {
+    totalVoxels = count;
+    destroyedVoxels = 0;
+    updateDestructionMeter();
+});
 scene.add(worldGroup);
 
 // Add camera to scene
@@ -96,6 +100,23 @@ let swingTimer = 0;
 
 // List to store active explosion effects
 const activeExplosions = [];
+
+// Destruction Meter Variables
+let totalVoxels = 0;
+let destroyedVoxels = 0;
+
+function updateDestructionMeter() {
+    const bar = document.getElementById('destruction-bar');
+    const text = document.getElementById('destruction-text');
+    if (bar && text && totalVoxels > 0) {
+        const percent = Math.min(100, Math.max(0, (destroyedVoxels / totalVoxels) * 100));
+        bar.style.width = percent + '%';
+        text.innerText = `Destruction: ${Math.round(percent)}%`;
+    } else if (bar && text && totalVoxels === 0) {
+        bar.style.width = '0%';
+        text.innerText = `Destruction: 0%`;
+    }
+}
 
 // Player movement setup
 const { updatePlayerMovement, playerObject, playerBox, playerBoxSize } = setupPlayerControls(camera, renderer.domElement);
@@ -442,7 +463,7 @@ function applyPhysicsToVoxel(voxel) {
     voxel.userData.isHit = true;
     voxel.userData.velocity = new THREE.Vector3(0, 0, 0);
     voxel.userData.angularVelocity = new THREE.Vector3(0, 0, 0);
-    voxel.userData.life = 10.0; // Seconds before disappearing
+    voxel.userData.life = 5.0; // Seconds before disappearing
     
     // Add to a list of active physics objects to update in the loop
     if (!scene.userData.physicsObjects) {
@@ -749,6 +770,9 @@ function triggerExplosion(center, force, radius) {
             
             applyPhysicsToVoxel(voxel);
             
+            destroyedVoxels++;
+            updateDestructionMeter();
+
             // Add velocity
             const explosionImpulse = dir.multiplyScalar(force * factor);
             voxel.userData.velocity.add(explosionImpulse);
@@ -799,8 +823,15 @@ function resetScene() {
         });
     }
 
+    destroyedVoxels = 0;
+    updateDestructionMeter();
+
     // Recreate world
-    worldGroup = createVoxelWorld();
+    worldGroup = createVoxelWorld((count) => {
+        totalVoxels = count;
+        destroyedVoxels = 0;
+        updateDestructionMeter();
+    });
     scene.add(worldGroup);
 
     // Reset physics state
