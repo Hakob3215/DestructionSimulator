@@ -253,6 +253,11 @@ function onKeyDown(event) {
         case '0': // Reset Scene
             resetScene();
             break;
+        case 'n':
+        case 'N':
+            isNukeMode = !isNukeMode;
+            console.log(`Nuke Mode: ${isNukeMode ? "ON" : "OFF"}`);
+            break;
     }
 }
 
@@ -300,6 +305,7 @@ const explosionLightIntensity = 8;
 const explosionEffectRadius = 5;  
 const explosionEffectDuration = 0.3;
 const castShadows = false;  // Currently false to reduce lag from many explosions (can change later)
+
 
 // Pre-allocate geometry to reduce GC
 const sharedExplosionGeometry = new THREE.SphereGeometry(1, 32, 32);
@@ -374,12 +380,12 @@ function createExplosionEffect(position) {
 }
 
 // Explosion Variables
-const grenadeExplosionForce = 75.0;
-const grenadeExplosionRadius = 15.0
-const hammerExplosionForce = 150.0;
-const hammerExplosionRadius = 20.0;
+const grenadeExplosionForce = 15.0;
+const grenadeExplosionRadius = 2.0
+const hammerExplosionForce = 75.0;
+const hammerExplosionRadius = 5.0;
 
-
+let isNukeMode = false;
 
 function throwGrenade() {
     // Clone grenade model (keep original in hand)
@@ -471,7 +477,8 @@ function checkHammerCollisions() {
                 const position = new THREE.Vector3().setFromMatrixPosition(matrix);
 
                 console.log("Hammer hit voxel!");
-                triggerExplosion(position, hammerExplosionForce, hammerExplosionRadius);
+                const multiplier = isNukeMode ? 8.0 : 1.0;
+                triggerExplosion(position, hammerExplosionForce * multiplier, hammerExplosionRadius * multiplier);
                 rockSmashSound.clone(true).play();
                 break;
             }
@@ -480,7 +487,8 @@ function checkHammerCollisions() {
         // Check for Dynamic Objects (Debris)
         if (object.userData.boundingBox && !object.userData.isHit) {
             console.log("Hammer hit debris!");
-            triggerExplosion(object.position, hammerExplosionForce, hammerExplosionRadius);
+            const multiplier = isNukeMode ? 8.0 : 1.0;
+            triggerExplosion(object.position, hammerExplosionForce * multiplier, hammerExplosionRadius * multiplier);
             rockSmashSound.clone(true).play();
             break; 
         }
@@ -525,7 +533,8 @@ function updatePhysics(time) {
             if (obj.userData.life <= 0) {
                 // Remove from scene and trigger explosion of grenade
                 if (obj.userData.isGrenade) {
-                    triggerExplosion(obj.position, grenadeExplosionForce, grenadeExplosionRadius);
+                    const multiplier = isNukeMode ? 8.0 : 1.0;
+                    triggerExplosion(obj.position, grenadeExplosionForce * multiplier, grenadeExplosionRadius * multiplier);
                     createExplosionEffect(obj.position);
                     playExplosionSoundAt(obj.position);
                     obj.userData.fuseSound.stop();
@@ -585,7 +594,8 @@ function updatePhysics(time) {
                 // Collision with static voxel!
                 
                 if (obj.userData.isGrenade) {
-                    triggerExplosion(obj.position, grenadeExplosionForce, grenadeExplosionRadius);
+                    const multiplier = isNukeMode ? 8.0 : 1.0;
+                    triggerExplosion(obj.position, grenadeExplosionForce * multiplier, grenadeExplosionRadius * multiplier);
                     createExplosionEffect(obj.position);
                     playExplosionSoundAt(obj.position);
                     obj.userData.fuseSound.stop();
