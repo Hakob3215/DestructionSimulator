@@ -770,9 +770,7 @@ function checkCollisions() {
     scene.traverse(obj => {
         if (obj.userData.boundingBox) {
             // Don't collide with objects that have been hit (physics objects)
-            // or maybe we DO want to collide with them? 
-            // For now, let's collide with everything that has a bounding box.
-            // But we must ensure we don't collide with ourselves if we had a bounding box (we don't on userData)
+            if (obj.userData.isHit) return;
             
             if (playerBox.intersectsBox(obj.userData.boundingBox)) {
                 collided = true;
