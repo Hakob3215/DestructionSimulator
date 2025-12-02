@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export function createVoxelWorld() {
+export function createVoxelWorld(onLoadCallback) {
     const worldGroup = new THREE.Group();
 
     // Create ground plane
@@ -89,6 +89,7 @@ export function createVoxelWorld() {
 
             // Goxel txt format: X Y Z RRGGBB
             const lines = text.split('\n');
+            let voxelCount = 0;
             
             lines.forEach(line => {
                 // Remove comments or empty lines
@@ -146,6 +147,7 @@ export function createVoxelWorld() {
                     voxel.userData.isHit = false;
 
                     worldGroup.add(voxel);
+                    voxelCount++;
                     
                     // Add helper (hidden by default, toggled with 'H')
                     const cubeHelper = new THREE.Box3Helper(
@@ -158,6 +160,10 @@ export function createVoxelWorld() {
                     worldGroup.add(cubeHelper);
                 }
             });
+
+            if (onLoadCallback) {
+                onLoadCallback(voxelCount);
+            }
         })
         .catch(err => console.error("Failed to load level:", err));
     
