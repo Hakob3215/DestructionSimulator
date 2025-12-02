@@ -767,23 +767,18 @@ function checkCollisions() {
     if (!playerBox) return false;
 
     // Check collision with Dynamic Objects (Debris)
+    // We intentionally IGNORE debris for player movement so they don't get stuck
+    /*
     let collided = false;
     if (scene.userData.physicsObjects) {
         for (const obj of scene.userData.physicsObjects) {
-            if (obj.userData.boundingBox && !obj.userData.isHit) {
-                 // Note: isHit is true for debris, but we might want to collide with large debris?
-                 // For now, let's assume we only collide with "active" debris if we want.
-                 // But usually debris is small.
-                 // The original code checked !isHit, which meant it only collided with STATIC objects.
-                 // But now static objects are in InstancedMesh.
-            }
-            // If we want to collide with debris:
             if (obj.userData.boundingBox && playerBox.intersectsBox(obj.userData.boundingBox)) {
                 collided = true;
             }
         }
     }
     if (collided) return true;
+    */
 
     // Check collision with Static World (InstancedMesh)
     const voxelMap = worldGroup.userData.voxelMap;
