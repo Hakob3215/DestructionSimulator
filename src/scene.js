@@ -84,82 +84,61 @@ export function createVoxelWorld(onLoadCallback) {
     fetch('/level.txt') 
         .then(response => response.text())
         .then(text => {
-            const voxelGeo = new THREE.BoxGeometry(1, 1, 1);
-            const voxelMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
-
             // Goxel txt format: X Y Z RRGGBB
-            const lines = text.split('\n');
-            let voxelCount = 0;
-            
-            lines.forEach(line => {
-                // Remove comments or empty lines
-                if (line.startsWith('#') || line.trim() === '') return;
+            const lines = text.split('\n').filter(l => l.trim() !== '' && !l.startsWith('#'));
+            const voxelCount = lines.length;
 
+            const geometry = new THREE.BoxGeometry(1, 1, 1);
+            const material = new THREE.MeshStandardMaterial({ color: 0xffffff }); 
+            const instancedMesh = new THREE.InstancedMesh(geometry, material, voxelCount);
+            
+            instancedMesh.castShadow = true;
+            instancedMesh.receiveShadow = true;
+
+            const voxelMap = new Map(); // Key: "x,y,z", Value: instanceId
+            const dummy = new THREE.Object3D();
+            const color = new THREE.Color();
+            
+            let index = 0;
+            lines.forEach(line => {
                 const parts = line.trim().split(/\s+/);
                 if (parts.length >= 3) {
-                    // Goxel coordinates: X Y Z
-                    // In Three.js: Y is up. In Goxel Z is usually up.
-                    // Let's assume Goxel Z -> Three.js Y, and Goxel Y -> Three.js Z
-                    // Or just map directly if Goxel was configured for Y-up.
-                    // Based on your file: -11 -11 0. The 3rd coord is 0, 1, 2... likely height (Y).
-                    // Wait, looking at the file:
-                    // -8 -3 1
-                    // -8 -3 2
-                    // -8 -3 3
-                    // The 3rd coordinate is increasing like layers. So 3rd coord is definitely Height (Y in ThreeJS).
-                    
                     const x = parseFloat(parts[0]);
                     const z = parseFloat(parts[1]); 
                     const y = parseFloat(parts[2]); 
                     
                     // Parse color
-                    let color = 0x888888;
                     if (parts.length >= 4) {
-                        // Goxel exports hex string without # usually, or with it.
-                        // Your file has "ffffff".
                         let colorStr = parts[3];
                         if (!colorStr.startsWith('#')) {
                             colorStr = '#' + colorStr;
                         }
-                        color = new THREE.Color(colorStr);
+                        color.set(colorStr);
+                    } else {
+                        color.set(0x888888);
                     }
 
-                    const mat = voxelMat.clone();
-                    mat.color.set(color);
+                    // Position
+                    dummy.position.set(x, y + 0.5, z);
+                    dummy.updateMatrix();
+                    instancedMesh.setMatrixAt(index, dummy.matrix);
+                    instancedMesh.setColorAt(index, color);
 
-                    const voxel = new THREE.Mesh(voxelGeo, mat);
+                    // Map for physics lookups
+                    voxelMap.set(`${x},${y + 0.5},${z}`, index);
                     
-                    // Adjust position
-                    // Goxel coordinates are integers. Three.js cubes are size 1 centered at 0.5.
-                    // We might need to offset by 0.5 if we want them to align perfectly with grid lines,
-                    // but for physics it doesn't matter much as long as they don't overlap.
-                    // Let's add 0.5 to Y so they sit ON the plane (if lowest Y is 0).
-                    // Your file has Z (height) starting at 0.
-                    
-                    voxel.position.set(x, y + 0.5, z); 
-                    
-                    voxel.castShadow = true;
-                    voxel.receiveShadow = true;
-
-                    // Physics Data
-                    voxel.userData.boundingBox = new THREE.Box3();
-                    voxel.userData.boundingBox.setFromObject(voxel);
-                    voxel.userData.isHit = false;
-
-                    worldGroup.add(voxel);
-                    voxelCount++;
-                    
-                    // Add helper (hidden by default, toggled with 'H')
-                    const cubeHelper = new THREE.Box3Helper(
-                        voxel.userData.boundingBox,
-                        0xffff00
-                    );
-                    cubeHelper.visible = false; // Start hidden
-                    // We need to tag it so our toggle logic finds it
-                    // The toggle logic checks for obj.type === 'Box3Helper', which is standard.
-                    worldGroup.add(cubeHelper);
+                    index++;
                 }
             });
+
+            instancedMesh.instanceMatrix.needsUpdate = true;
+            instancedMesh.instanceColor.needsUpdate = true;
+
+            worldGroup.add(instancedMesh);
+            
+            // Store map and mesh for physics engine to use
+            worldGroup.userData.voxelMap = voxelMap;
+            worldGroup.userData.instancedMesh = instancedMesh;
 
             if (onLoadCallback) {
                 onLoadCallback(voxelCount);

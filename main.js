@@ -443,18 +443,31 @@ function checkHammerCollisions() {
     const intersects = raycaster.intersectObjects(scene.children);
 
     for (let i = 0; i < intersects.length; i++) {
-        const object = intersects[i].object;
-        // Check if the object is a voxel (has boundingBox userData) and hasn't been hit yet
+        const intersection = intersects[i];
+        const object = intersection.object;
+
+        // Check for InstancedMesh (Static World)
+        if (object.isInstancedMesh) {
+            const instanceId = intersection.instanceId;
+            if (instanceId !== undefined) {
+                // Get position of the hit instance
+                const matrix = new THREE.Matrix4();
+                object.getMatrixAt(instanceId, matrix);
+                const position = new THREE.Vector3().setFromMatrixPosition(matrix);
+
+                console.log("Hammer hit voxel!");
+                triggerExplosion(position, hammerExplosionForce, hammerExplosionRadius);
+                rockSmashSound.clone(true).play();
+                break;
+            }
+        }
+        
+        // Check for Dynamic Objects (Debris)
         if (object.userData.boundingBox && !object.userData.isHit) {
-            console.log("Hammer hit voxel!");
-            
-            // Use explosion logic for hammer hit too!
-            triggerExplosion(object.position, hammerExplosionForce, hammerExplosionRadius); // Strong force, radius 2
-            
-            // Plays rock smash sound
+            console.log("Hammer hit debris!");
+            triggerExplosion(object.position, hammerExplosionForce, hammerExplosionRadius);
             rockSmashSound.clone(true).play();
-            
-            break; // Only hit one voxel per swing
+            break; 
         }
     }
 }
@@ -482,21 +495,11 @@ function updatePhysics(time) {
         scene.userData.physicsObjects = [];
     }
 
-    // Initialize static voxels list if not exists or empty (and scene has children)
-    // Since we load asynchronously, we might need to rebuild this list once the level loads
-    if (!scene.userData.staticVoxels || (scene.userData.staticVoxels.length === 0 && scene.children.length > 0)) {
-        scene.userData.staticVoxels = [];
-        scene.traverse(obj => {
-            if (obj.userData.boundingBox && !obj.userData.isHit) {
-                scene.userData.staticVoxels.push(obj);
-            }
-        });
-    }
-
     if (scene.userData.physicsObjects.length === 0) return;
 
     const gravity = new THREE.Vector3(0, -20, 0);
     const floorY = 0.5; // Assuming cubes are size 1 and floor is at 0
+    const voxelMap = worldGroup.userData.voxelMap;
 
     for (let i = scene.userData.physicsObjects.length - 1; i >= 0; i--) {
         const obj = scene.userData.physicsObjects[i];
@@ -521,10 +524,6 @@ function updatePhysics(time) {
                 scene.userData.physicsObjects.splice(i, 1);
                 continue;
             }
-            // Fade out effect (optional, requires material cloning which might be expensive)
-            // if (obj.userData.life < 1.0) {
-            //    obj.scale.setScalar(obj.userData.life);
-            // }
         }
 
         // Apply gravity
@@ -534,7 +533,6 @@ function updatePhysics(time) {
         obj.position.add(obj.userData.velocity.clone().multiplyScalar(time));
         
         // Update rotation
-        // Dampen rotation over time to prevent infinite spinning
         obj.userData.angularVelocity.multiplyScalar(0.98); 
         
         obj.rotation.x += obj.userData.angularVelocity.x * time;
@@ -550,20 +548,62 @@ function updatePhysics(time) {
             
             // Stop if slow enough
             if (obj.userData.velocity.lengthSq() < 0.1) {
-                // Instead of removing immediately, let lifetime handle it
-                // scene.userData.physicsObjects.splice(i, 1);
                 obj.userData.velocity.set(0,0,0);
                 obj.userData.angularVelocity.set(0,0,0);
             }
         }
         
-        // Update bounding box if needed
-        // Note: Box3 is axis-aligned (AABB). It will grow to fit the rotated object but won't rotate with it.
-        // For true OBB (Oriented Bounding Box) collision, we'd need a more complex physics engine (Cannon.js / Ammo.js).
-        // For now, we are using sphere collision for physics objects, so the AABB is only used for player collision.
-        // Updating it here ensures the player doesn't walk into the "ghost" of where the cube was.
+        // Update bounding box
         if (obj.userData.boundingBox) {
              obj.userData.boundingBox.setFromObject(obj);
+        }
+
+        // Check collision with Static World (InstancedMesh)
+        if (voxelMap) {
+            // Check the voxel at the object's position
+            const checkX = Math.round(obj.position.x);
+            const checkY = Math.floor(obj.position.y);
+            const checkZ = Math.round(obj.position.z);
+            const key = `${checkX},${checkY + 0.5},${checkZ}`;
+
+            if (voxelMap.has(key)) {
+                // Collision with static voxel!
+                
+                if (obj.userData.isGrenade) {
+                    triggerExplosion(obj.position, grenadeExplosionForce, grenadeExplosionRadius);
+                    createExplosionEffect(obj.position);
+                    playExplosionSoundAt(obj.position);
+                    obj.userData.fuseSound.stop();
+                    obj.userData.fuseSound.disconnect();
+                    if (obj.parent) obj.parent.remove(obj);
+                    scene.userData.physicsObjects.splice(i, 1);
+                    continue;
+                }
+
+                // Simple bounce
+                const impactSpeed = obj.userData.velocity.length();
+                const minImpactSpeed = 20.0;
+
+                if (impactSpeed >= minImpactSpeed) {
+                    // Destroy the static voxel
+                    const instanceId = voxelMap.get(key);
+                    destroyVoxel(instanceId, checkX, checkY + 0.5, checkZ, obj.position, impactSpeed * 0.1, 1.2);
+                    voxelMap.delete(key);
+                    
+                    // Reflect
+                    obj.userData.velocity.multiplyScalar(-0.5);
+                } else {
+                    // Just bounce
+                    // Determine normal based on previous position? 
+                    // Simplified: just reverse velocity and push out
+                    obj.userData.velocity.multiplyScalar(-0.5);
+                    
+                    // Push out towards previous position (approximate)
+                    const pushDir = obj.userData.velocity.clone().normalize().negate();
+                    if (pushDir.lengthSq() === 0) pushDir.set(0,1,0);
+                    obj.position.add(pushDir.multiplyScalar(0.5));
+                }
+            }
         }
     }
 
@@ -614,174 +654,111 @@ function updatePhysics(time) {
             }
         }
     }
+}
 
-    // Check for collisions between physics objects and static objects
-    // Optimization: Only check static objects near the moving ones.
-    // We can use a simple spatial hash or just check distance to the center of the grid if we know it.
-    // But a simpler optimization is to only check static objects that are within a certain range of the moving object.
+function destroyVoxel(instanceId, x, y, z, explosionCenter, force, radius) {
+    const instancedMesh = worldGroup.userData.instancedMesh;
+    if (!instancedMesh) return;
+
+    // Hide the instance by scaling it to zero
+    const matrix = new THREE.Matrix4();
+    instancedMesh.getMatrixAt(instanceId, matrix);
+    matrix.elements[0] = 0; 
+    matrix.elements[5] = 0;
+    matrix.elements[10] = 0;
+    instancedMesh.setMatrixAt(instanceId, matrix);
+    instancedMesh.instanceMatrix.needsUpdate = true;
+
+    // Create dynamic debris
+    const color = new THREE.Color();
+    instancedMesh.getColorAt(instanceId, color);
+
+    const geometry = new THREE.BoxGeometry(1, 1, 1);
+    const material = new THREE.MeshStandardMaterial({ color: color });
+    const voxel = new THREE.Mesh(geometry, material);
     
-    // Assuming grid is aligned and cubes are size 1.
-    // We can look up if a static voxel exists at the moving object's position.
+    // Position matches the static voxel
+    voxel.position.set(x, y, z);
+    voxel.castShadow = true;
+    voxel.receiveShadow = true;
     
-    // First, let's build a quick lookup for static voxels if we haven't already or if it needs update
-    // Actually, traversing the scene every frame is too slow.
-    // Let's maintain a list of static voxels in scene.userData
-    // (Moved initialization to top of function)
-
-    // Filter static voxels that are now hit (this is still O(N) but N shrinks)
-    // Better: remove from list when hit.
+    // Physics setup
+    voxel.userData.boundingBox = new THREE.Box3().setFromObject(voxel);
     
-    for (let i = 0; i < scene.userData.physicsObjects.length; i++) {
-        const movingObj = scene.userData.physicsObjects[i];
-        
-        // Optimization: Only check against static voxels that are close.
-        // Since we don't have a spatial index, we still have to iterate, but let's try to be smarter.
-        // If we assume the grid is roughly at the origin, we can skip checks if the moving object is far away.
-        if (movingObj.position.lengthSq() > 1000) continue; // Skip if far away
+    scene.add(voxel);
+    applyPhysicsToVoxel(voxel);
 
-        // Iterate backwards so we can remove hit voxels easily
-        for (let j = scene.userData.staticVoxels.length - 1; j >= 0; j--) {
-            const staticObj = scene.userData.staticVoxels[j];
-            
-            // Quick bounding box check first?
-            // Or just distance check.
-            // Optimization: Check squared distance to avoid sqrt
-            const distSq = movingObj.position.distanceToSquared(staticObj.position);
-            const minDistSq = 1.0; // 1.0 * 1.0
+    // Calculate explosion physics
+    let dir = voxel.position.clone().sub(explosionCenter);
+    dir.add(new THREE.Vector3(
+        (Math.random() - 0.5) * 0.5,
+        (Math.random() - 0.5) * 0.5,
+        (Math.random() - 0.5) * 0.5
+    ));
+    if (dir.lengthSq() === 0) dir = new THREE.Vector3(0, 1, 0);
+    dir.normalize();
 
-            if (distSq < minDistSq) {
-                // Collision detected!
-                
-                if (movingObj.userData.isGrenade) {
+    const dist = voxel.position.distanceTo(explosionCenter);
+    const factor = Math.max(0, 1 - (dist / radius));
 
-                    // Trigger explosion at grenade position
-                    triggerExplosion(movingObj.position, grenadeExplosionForce, grenadeExplosionRadius); // explosion force & radius
+    const explosionImpulse = dir.multiplyScalar(force * factor);
+    voxel.userData.velocity.add(explosionImpulse);
+    voxel.userData.velocity.y += 2.0; 
 
-                    createExplosionEffect(movingObj.position);
-                    playExplosionSoundAt(movingObj.position);
+    voxel.userData.angularVelocity.add(
+        new THREE.Vector3(Math.random()-0.5, Math.random()-0.5, Math.random()-0.5).multiplyScalar(force)
+    );
 
-                    movingObj.userData.fuseSound.stop();
-                    movingObj.userData.fuseSound.disconnect();
-
-                    // Remove grenade object
-                    if (movingObj.parent) movingObj.parent.remove(movingObj);
-
-                    // Remove from physics list
-                    scene.userData.physicsObjects.splice(i, 1);
-
-                    continue;  // skip rest of collision logic
-                }
-                
-                // Calculate impact direction
-                const impactDirection = staticObj.position.clone().sub(movingObj.position).normalize();
-                
-                // Check if the impact is strong enough to dislodge the static block
-                const impactSpeed = movingObj.userData.velocity.length();
-                const minImpactSpeed = 20.0; // Increased threshold to prevent infinite chain reactions
-
-                if (impactSpeed < minImpactSpeed) {
-                    // Bounce off without breaking
-                    const normal = impactDirection.clone().negate();
-                    const velocityAlongNormal = movingObj.userData.velocity.dot(normal);
-                    if (velocityAlongNormal < 0) {
-                        const impulse = normal.clone().multiplyScalar(-1.2 * velocityAlongNormal);
-                        movingObj.userData.velocity.add(impulse);
-                    }
-                    // Separate
-                    const overlap = 1.0 - Math.sqrt(distSq);
-                    movingObj.position.add(normal.clone().multiplyScalar(overlap));
-                    continue; 
-                }
-
-                // TRIGGER EXPLOSION / CHUNK DAMAGE
-                // Instead of just activating one block, we activate a small radius
-                // This creates "chunks" and prevents straight-line artifacts
-                
-                const explosionRadius = 1.2; // Affects immediate neighbors
-                const explosionForce = impactSpeed * 0.1; // Reduced force transfer to dampen chaos
-                
-                triggerExplosion(staticObj.position, explosionForce, explosionRadius);
-
-                // Reflect the moving object
-                const normal = impactDirection.clone().negate();
-                const velocityAlongNormal = movingObj.userData.velocity.dot(normal);
-                
-                if (velocityAlongNormal < 0) {
-                     const impulse = normal.clone().multiplyScalar(-1.1 * velocityAlongNormal); 
-                     movingObj.userData.velocity.add(impulse);
-                     movingObj.userData.velocity.multiplyScalar(0.5); 
-                }
-                break;
-            }
-                
-                // Separate slightly to avoid sticking
-                // const overlap = 1.0 - Math.sqrt(distSq);
-                // movingObj.position.add(normal.clone().multiplyScalar(overlap));
-            }
-        }
-    // Removed duplicate collision loop
+    destroyedVoxels++;
+    updateDestructionMeter();
 }
 
 function triggerExplosion(center, force, radius) {
-    // Find all static voxels within radius
-    // This is O(N) but N is small (<1000)
-    
-    // We need to iterate backwards because we are removing items
-    if (!scene.userData.staticVoxels) return;
+    const voxelMap = worldGroup.userData.voxelMap;
+    if (!voxelMap) return;
 
-    const radiusSq = radius * radius;
+    // Iterate through the bounding box of the explosion radius
+    // We use the map to find voxels in O(1) instead of iterating all voxels
+    const r = Math.ceil(radius);
+    const centerX = Math.round(center.x);
+    const centerY = Math.floor(center.y); // Y is floor because of +0.5 offset logic
+    const centerZ = Math.round(center.z);
 
-    for (let i = scene.userData.staticVoxels.length - 1; i >= 0; i--) {
-        const voxel = scene.userData.staticVoxels[i];
+    for (let x = -r; x <= r; x++) {
+        for (let y = -r; y <= r; y++) {
+            for (let z = -r; z <= r; z++) {
+                // Check spherical distance
+                if (x*x + y*y + z*z > radius*radius) continue;
 
-        // Optimization: Quick axis checks to avoid expensive distance calculation
-        if (Math.abs(voxel.position.x - center.x) > radius) continue;
-        if (Math.abs(voxel.position.y - center.y) > radius) continue;
-        if (Math.abs(voxel.position.z - center.z) > radius) continue;
-
-        const distSq = voxel.position.distanceToSquared(center);
-        
-        if (distSq < radiusSq) {
-            // Remove from static list using Swap-and-Pop (O(1)) instead of splice (O(N))
-            // This is crucial for performance when many blocks are destroyed at once
-            const lastIndex = scene.userData.staticVoxels.length - 1;
-            if (i < lastIndex) {
-                scene.userData.staticVoxels[i] = scene.userData.staticVoxels[lastIndex];
+                const checkX = centerX + x;
+                const checkY = centerY + y; // Integer Y
+                const checkZ = centerZ + z;
+                
+                // The map keys use Y + 0.5
+                const key = `${checkX},${checkY + 0.5},${checkZ}`;
+                
+                if (voxelMap.has(key)) {
+                    const instanceId = voxelMap.get(key);
+                    
+                    // Destroy the voxel
+                    destroyVoxel(instanceId, checkX, checkY + 0.5, checkZ, center, force, radius);
+                    
+                    // Remove from map so it can't be hit again
+                    voxelMap.delete(key);
+                }
             }
-            scene.userData.staticVoxels.pop();
-            
-            // Calculate explosion force direction
-            let dir = voxel.position.clone().sub(center);
-            
-            // Add randomness to direction to prevent planar artifacts
-            dir.add(new THREE.Vector3(
-                (Math.random() - 0.5) * 0.5,
-                (Math.random() - 0.5) * 0.5,
-                (Math.random() - 0.5) * 0.5
-            ));
-
-            if (dir.lengthSq() === 0) dir = new THREE.Vector3(0, 1, 0); // Handle exact center
-            dir.normalize();
-            
-            // Apply physics
-            // Force falls off with distance?
-            const dist = Math.sqrt(distSq);
-            const factor = 1 - (dist / radius); // 1 at center, 0 at edge
-            
-            applyPhysicsToVoxel(voxel);
-            
-            destroyedVoxels++;
-            updateDestructionMeter();
-
-            // Add velocity
-            const explosionImpulse = dir.multiplyScalar(force * factor);
-            voxel.userData.velocity.add(explosionImpulse);
-            voxel.userData.velocity.y += 2.0; // Add slight upward pop
-            
-            // Add some random rotation
-             voxel.userData.angularVelocity.add(
-                new THREE.Vector3(Math.random()-0.5, Math.random()-0.5, Math.random()-0.5).multiplyScalar(force)
-            );
+        }
+    }
+    
+    // Also check for dynamic objects (debris) in range
+    // This is still O(N) on debris count, but debris count is usually small compared to static world
+    if (scene.userData.physicsObjects) {
+        const radiusSq = radius * radius;
+        for (const obj of scene.userData.physicsObjects) {
+            if (obj.position.distanceToSquared(center) < radiusSq) {
+                 let dir = obj.position.clone().sub(center).normalize();
+                 obj.userData.velocity.add(dir.multiplyScalar(force * 0.5));
+            }
         }
     }
 }
@@ -789,20 +766,56 @@ function triggerExplosion(center, force, radius) {
 function checkCollisions() {
     if (!playerBox) return false;
 
+    // Check collision with Dynamic Objects (Debris)
     let collided = false;
-
-    scene.traverse(obj => {
-        if (obj.userData.boundingBox) {
-            // Don't collide with objects that have been hit (physics objects)
-            if (obj.userData.isHit) return;
-            
-            if (playerBox.intersectsBox(obj.userData.boundingBox)) {
+    if (scene.userData.physicsObjects) {
+        for (const obj of scene.userData.physicsObjects) {
+            if (obj.userData.boundingBox && !obj.userData.isHit) {
+                 // Note: isHit is true for debris, but we might want to collide with large debris?
+                 // For now, let's assume we only collide with "active" debris if we want.
+                 // But usually debris is small.
+                 // The original code checked !isHit, which meant it only collided with STATIC objects.
+                 // But now static objects are in InstancedMesh.
+            }
+            // If we want to collide with debris:
+            if (obj.userData.boundingBox && playerBox.intersectsBox(obj.userData.boundingBox)) {
                 collided = true;
             }
         }
-    });
+    }
+    if (collided) return true;
 
-    return collided;
+    // Check collision with Static World (InstancedMesh)
+    const voxelMap = worldGroup.userData.voxelMap;
+    if (!voxelMap) return false;
+
+    const min = playerBox.min;
+    const max = playerBox.max;
+    
+    const minX = Math.floor(min.x);
+    const maxX = Math.ceil(max.x);
+    const minZ = Math.floor(min.z);
+    const maxZ = Math.ceil(max.z);
+    const minY = Math.floor(min.y - 0.5); 
+    const maxY = Math.ceil(max.y - 0.5);
+
+    for (let x = minX; x <= maxX; x++) {
+        for (let z = minZ; z <= maxZ; z++) {
+            for (let y = minY; y <= maxY; y++) {
+                const key = `${x},${y + 0.5},${z}`;
+                if (voxelMap.has(key)) {
+                    // Precise AABB check
+                    const voxelBox = new THREE.Box3();
+                    voxelBox.min.set(x - 0.5, y, z - 0.5);
+                    voxelBox.max.set(x + 0.5, y + 1, z + 0.5);
+                    
+                    if (playerBox.intersectsBox(voxelBox)) return true;
+                }
+            }
+        }
+    }
+
+    return false;
 }
 
 function resetScene() {
@@ -810,17 +823,13 @@ function resetScene() {
     if (worldGroup) {
         scene.remove(worldGroup);
         
-        // Optional: Dispose of geometries and materials to prevent memory leaks
-        worldGroup.traverse(obj => {
-            if (obj.geometry) obj.geometry.dispose();
-            if (obj.material) {
-                if (Array.isArray(obj.material)) {
-                    obj.material.forEach(m => m.dispose());
-                } else {
-                    obj.material.dispose();
-                }
-            }
-        });
+        // Dispose of InstancedMesh
+        if (worldGroup.userData.instancedMesh) {
+            worldGroup.userData.instancedMesh.geometry.dispose();
+            worldGroup.userData.instancedMesh.material.dispose();
+        }
+        worldGroup.userData.voxelMap = null;
+        worldGroup.userData.instancedMesh = null;
     }
 
     destroyedVoxels = 0;
@@ -835,8 +844,14 @@ function resetScene() {
     scene.add(worldGroup);
 
     // Reset physics state
+    // Remove all physics objects from scene
+    if (scene.userData.physicsObjects) {
+        for (const obj of scene.userData.physicsObjects) {
+            if (obj.parent) obj.parent.remove(obj);
+        }
+    }
     scene.userData.physicsObjects = [];
-    scene.userData.staticVoxels = null; // Will be rebuilt in updatePhysics
+    scene.userData.staticVoxels = null; 
 
     // Reset player
     playerObject.position.copy(defaultPlayerPosition);
