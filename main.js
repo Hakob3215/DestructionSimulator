@@ -19,18 +19,30 @@ scene.background = new THREE.Color(0x87CEEB);
 // Creates the menus
 const mainMenu = createMenu("rgba(27, 38, 59, 0.85)", "column");
 const levelMenu = createMenu("rgba(27, 38, 59, 0.85)", "row");
-
+const winScreen = createMenu("rgba(27, 38, 59, 0.85)", "column",);
 document.body.appendChild(mainMenu);
 document.body.appendChild(levelMenu);
+document.body.appendChild(winScreen);
 
 // Creates text for menus
 const mainMenuText = createTitleText("Destruction Simulator", "white");
+const winnerText = createTitleText("YOU WIN!!!!!!!!", "rgba(0, 255, 34, 1)");
 mainMenu.appendChild(mainMenuText);
+winScreen.appendChild(winnerText);
 
 // Adds buttons to the menus
 mainMenu.appendChild(createButton("Play", "rgba(2, 184, 32, 1)", "10%", "10%", () => hideAllMenus(renderer.domElement)));
 mainMenu.appendChild(createButton("Levels", "rgba(161, 14, 219, 1)", "10%", "10%", () => showMenu(levelMenu)));
-mainMenu.appendChild(createButton("Restart", "rgba(161, 9, 9, 1)", "10%", "10%", () => resetScene()));
+mainMenu.appendChild(createButton("Restart", "rgba(161, 9, 9, 1)", "10%", "10%", () => {
+    resetScene();
+    hideAllMenus(renderer.domElement);
+}));
+
+winScreen.appendChild(createButton("New Level", "rgba(2, 184, 32, 1)", "15%", "10%", () => showMenu(levelMenu)));
+winScreen.appendChild(createButton("Retry", "rgba(161, 9, 9, 1)", "15%", "10%", () => {
+    resetScene();
+    hideAllMenus(renderer.domElement);
+}));
 
 
 // Level Configuration
@@ -44,7 +56,7 @@ const levels = [
 let currentLevel = levels[0].file;
 
 levels.forEach(level => {
-    levelMenu.appendChild(createButton(level.name, "rgba(140, 235, 16, 1)", "10%", "20%",() => {
+    levelMenu.appendChild(createButton(level.name, "rgba(99, 4, 128, 1)", "12.5%", "25%", () => {
         console.log(`${level.name} Selected!`);
         currentLevel = level.file;
         resetScene();
@@ -133,6 +145,12 @@ function updateDestructionMeter() {
         const percent = Math.min(100, Math.max(0, (destroyedVoxels / totalVoxels) * 100));
         bar.style.width = percent + '%';
         text.innerText = `Destruction: ${Math.floor(percent)}%`;
+
+        // Win Condition: destruction meter above 90%
+        if (percent >= 90) {
+            document.exitPointerLock();
+            showMenu(winScreen);
+        }
     } else if (bar && text && totalVoxels === 0) {
         bar.style.width = '0%';
         text.innerText = `Destruction: 0%`;
