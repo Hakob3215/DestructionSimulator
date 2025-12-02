@@ -326,8 +326,8 @@ function playExplosionSoundAt(position) {
 
 // Explosion Effect variables
 const explosionLightIntensity = 8;
-const explosionEffectRadius = 5;  
-const explosionEffectDuration = 0.3;
+const explosionEffectRadius = 2.0;  
+const explosionEffectDuration = 0.5;
 const castShadows = false;  // Currently false to reduce lag from many explosions (can change later)
 
 
@@ -368,7 +368,7 @@ function createExplosionEffect(position) {
 
     // ---------- Animation state ----------
     let elapsed = 0;
-
+    let multiplier = isNukeMode ? 8.0 : 1.0;
     // ---------- Update Explosion ----------
     function updateExplosionEffect(deltaTime) {
         elapsed += deltaTime;
@@ -389,7 +389,7 @@ function createExplosionEffect(position) {
         }
 
         // Scale sphere
-        const scale = 1 + t * explosionEffectRadius;
+        const scale = 1 + t * explosionEffectRadius * multiplier;
         explosionSphere.scale.set(scale, scale, scale);
 
         // Fade opacity
