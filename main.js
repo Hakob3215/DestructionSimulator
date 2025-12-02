@@ -111,7 +111,7 @@ function updateDestructionMeter() {
     if (bar && text && totalVoxels > 0) {
         const percent = Math.min(100, Math.max(0, (destroyedVoxels / totalVoxels) * 100));
         bar.style.width = percent + '%';
-        text.innerText = `Destruction: ${Math.round(percent)}%`;
+        text.innerText = `Destruction: ${Math.floor(percent)}%`;
     } else if (bar && text && totalVoxels === 0) {
         bar.style.width = '0%';
         text.innerText = `Destruction: 0%`;
@@ -360,9 +360,9 @@ function createExplosionEffect(position) {
 
 // Explosion Variables
 const grenadeExplosionForce = 75.0;
-const grenadeExplosionRadius = 5.0
-const hammerExplosionForce = 15.0;
-const hammerExplosionRadius = 2.0;
+const grenadeExplosionRadius = 15.0
+const hammerExplosionForce = 150.0;
+const hammerExplosionRadius = 20.0;
 
 
 
