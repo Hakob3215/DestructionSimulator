@@ -28,9 +28,24 @@ document.body.appendChild(levelMenu);
 mainMenu.appendChild(createButton("Play", () => hideAllMenus(renderer.domElement)));
 mainMenu.appendChild(createButton("Levels", () => showMenu(levelMenu)));
 
-levelMenu.appendChild(createButton("Level 1", () => console.log("Level 1 Selected!")));
-levelMenu.appendChild(createButton("Level 2", () => console.log("Level 2 Selected!")));
-levelMenu.appendChild(createButton("Level 3", () => console.log("Level 3 Selected!")));
+// Level Configuration
+const levels = [
+    { name: "Default Level", file: "level.txt" },
+    { name: "Monument", file: "monu.txt" },
+    // Add more levels here as you add files to the public folder
+    // { name: "London", file: "london.txt" },
+];
+
+let currentLevel = levels[0].file;
+
+levels.forEach(level => {
+    levelMenu.appendChild(createButton(level.name, () => {
+        console.log(`${level.name} Selected!`);
+        currentLevel = level.file;
+        resetScene();
+        hideAllMenus(renderer.domElement);
+    }));
+});
 
 // Save the default camera position & rotation
 const defaultCameraPosition = new THREE.Vector3(0, 4, 10);
@@ -53,7 +68,7 @@ renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 
 // Create the world
-let worldGroup = createVoxelWorld((count) => {
+let worldGroup = createVoxelWorld(currentLevel, (count) => {
     totalVoxels = count;
     destroyedVoxels = 0;
     updateDestructionMeter();
@@ -831,7 +846,7 @@ function resetScene() {
     updateDestructionMeter();
 
     // Recreate world
-    worldGroup = createVoxelWorld((count) => {
+    worldGroup = createVoxelWorld(currentLevel, (count) => {
         totalVoxels = count;
         destroyedVoxels = 0;
         updateDestructionMeter();
