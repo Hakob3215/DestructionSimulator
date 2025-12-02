@@ -49,7 +49,8 @@ winScreen.appendChild(createButton("Retry", "rgba(161, 9, 9, 1)", "15%", "10%", 
 const levels = [
     { name: "Default Level", file: "level.txt" },
     { name: "Monument", file: "monu.txt" },
-    { name: "Farm", file: "farm.txt"}
+    { name: "Farm", file: "farm.txt"},
+    { name: "Graveyard", file: "graveyard.txt"}
     // Add more levels here as you add files to the public folder
     // { name: "London", file: "london.txt" },
 ];
