@@ -4,7 +4,7 @@ import { setupPlayerControls } from './src/Player/playerController.js';
 import { createHammer } from './src/Weapons/hammer.js';
 import { createCartoonBomb } from './src/Weapons/grenade.js';
 import { createDynamite } from './src/Weapons/grenade.js';
-import { menuState, createMenu, createButton, showMenu, hideAllMenus } from './src/userInterface.js';
+import { menuState, createMenu, createButton, showMenu, hideAllMenus, createTitleText } from './src/userInterface.js';
 
 // Basic setup
 const scene = new THREE.Scene();
@@ -17,16 +17,33 @@ const audioLoader = new THREE.AudioLoader();
 scene.background = new THREE.Color(0x87CEEB);
 
 // Creates the menus
-const mainMenu = createMenu("rgba(204, 155, 114, 0.9)", "column");
-const levelMenu = createMenu("rgba(92, 141, 197, 0.9)", "row");
-
+const mainMenu = createMenu("rgba(27, 38, 59, 0.85)", "column");
+const levelMenu = createMenu("rgba(27, 38, 59, 0.85)", "row");
+const winScreen = createMenu("rgba(27, 38, 59, 0.85)", "column",);
 document.body.appendChild(mainMenu);
 document.body.appendChild(levelMenu);
+document.body.appendChild(winScreen);
 
+// Creates text for menus
+const mainMenuText = createTitleText("Destruction Simulator", "white");
+const winnerText = createTitleText("YOU WIN!!!!!!!!", "rgba(0, 255, 34, 1)");
+mainMenu.appendChild(mainMenuText);
+winScreen.appendChild(winnerText);
 
 // Adds buttons to the menus
-mainMenu.appendChild(createButton("Play", () => hideAllMenus(renderer.domElement)));
-mainMenu.appendChild(createButton("Levels", () => showMenu(levelMenu)));
+mainMenu.appendChild(createButton("Play", "rgba(2, 184, 32, 1)", "10%", "10%", () => hideAllMenus(renderer.domElement)));
+mainMenu.appendChild(createButton("Levels", "rgba(161, 14, 219, 1)", "10%", "10%", () => showMenu(levelMenu)));
+mainMenu.appendChild(createButton("Restart", "rgba(161, 9, 9, 1)", "10%", "10%", () => {
+    resetScene();
+    hideAllMenus(renderer.domElement);
+}));
+
+winScreen.appendChild(createButton("New Level", "rgba(2, 184, 32, 1)", "15%", "10%", () => showMenu(levelMenu)));
+winScreen.appendChild(createButton("Retry", "rgba(161, 9, 9, 1)", "15%", "10%", () => {
+    resetScene();
+    hideAllMenus(renderer.domElement);
+}));
+
 
 // Level Configuration
 const levels = [
@@ -39,13 +56,14 @@ const levels = [
 let currentLevel = levels[0].file;
 
 levels.forEach(level => {
-    levelMenu.appendChild(createButton(level.name, () => {
+    levelMenu.appendChild(createButton(level.name, "rgba(99, 4, 128, 1)", "12.5%", "25%", () => {
         console.log(`${level.name} Selected!`);
         currentLevel = level.file;
         resetScene();
         hideAllMenus(renderer.domElement);
     }));
 });
+
 
 // Save the default camera position & rotation
 const defaultCameraPosition = new THREE.Vector3(0, 4, 10);
@@ -127,6 +145,12 @@ function updateDestructionMeter() {
         const percent = Math.min(100, Math.max(0, (destroyedVoxels / totalVoxels) * 100));
         bar.style.width = percent + '%';
         text.innerText = `Destruction: ${Math.floor(percent)}%`;
+
+        // Win Condition: destruction meter above 90%
+        if (percent >= 90) {
+            document.exitPointerLock();
+            showMenu(winScreen);
+        }
     } else if (bar && text && totalVoxels === 0) {
         bar.style.width = '0%';
         text.innerText = `Destruction: 0%`;

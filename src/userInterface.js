@@ -6,7 +6,7 @@ export const menuState = {
     mainMenuUp: false
 };
 
-export function createMenu(background, alignmentDirection) {
+export function createMenu(color, alignmentDirection) {
     const menu = document.createElement("div");
 
     // Menu Positioning
@@ -19,13 +19,13 @@ export function createMenu(background, alignmentDirection) {
     menu.style.zIndex = 150;
 
     // Menu appearance
-    menu.style.background = background;
-    menu.style.borderRadius = "10px";
-    menu.style.border = "5px solid black";
+    menu.style.background = color;
+    menu.style.borderRadius = "30px";
+    menu.style.border = "5px solid white";
     menu.style.padding = "1%";
 
     // Button alignment inside menu
-    menu.style.gap = "30px";
+    menu.style.gap = "40px";
     menu.style.flexDirection = alignmentDirection;
     menu.style.justifyContent = "center";
     menu.style.alignItems = "center";
@@ -36,20 +36,36 @@ export function createMenu(background, alignmentDirection) {
     return menu;
 }
 
-export function createButton(text, onClick) {
+export function createButton(text, color, width, height, onClick) {
     const btn = document.createElement("button");
 
     btn.textContent = text;
-    btn.style.width = "10%";
-    btn.style.height = "10%";
+    btn.style.fontSize = "30px";
+    btn.style.color = "white";
+
+    btn.style.width = width;
+    btn.style.height = height;
     btn.style.padding = "20px 20px";
-    btn.style.fontSize = "16px";
-    btn.style.borderRadius = "6px";
+    btn.style.borderRadius = "10px";
+    btn.style.border = "3px solid white";
+
+    btn.style.background = color
+
     btn.style.cursor = "pointer";
 
     btn.onclick = onClick;
 
     return btn;
+}
+
+export function createTitleText(titleText, color) {
+    const text = document.createElement('h1');
+
+    text.textContent = titleText;
+    text.style.fontSize = "50px";
+    text.style.color = color;
+    
+    return text;
 }
 
 export function showMenu(menuToShow) {
