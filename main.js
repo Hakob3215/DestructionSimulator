@@ -4,7 +4,7 @@ import { setupPlayerControls } from './src/Player/playerController.js';
 import { createHammer } from './src/Weapons/hammer.js';
 import { createCartoonBomb } from './src/Weapons/grenade.js';
 import { createDynamite } from './src/Weapons/grenade.js';
-import { menuState, createMenu, createButton, showMenu, hideAllMenus } from './src/userInterface.js';
+import { menuState, createMenu, createButton, showMenu, hideAllMenus, createTitleText } from './src/userInterface.js';
 
 // Basic setup
 const scene = new THREE.Scene();
@@ -17,20 +17,23 @@ const audioLoader = new THREE.AudioLoader();
 scene.background = new THREE.Color(0x87CEEB);
 
 // Creates the menus
-const mainMenu = createMenu("rgba(204, 155, 114, 0.9)", "column");
-const levelMenu = createMenu("rgba(92, 141, 197, 0.9)", "row");
+const mainMenu = createMenu("rgba(27, 38, 59, 0.85)", "column");
+const levelMenu = createMenu("rgba(27, 38, 59, 0.85)", "row");
 
 document.body.appendChild(mainMenu);
 document.body.appendChild(levelMenu);
 
+// Creates text for menus
+const mainMenuText = createTitleText("Destruction Simulator", "white");
+mainMenu.appendChild(mainMenuText);
 
 // Adds buttons to the menus
-mainMenu.appendChild(createButton("Play", () => hideAllMenus(renderer.domElement)));
-mainMenu.appendChild(createButton("Levels", () => showMenu(levelMenu)));
+mainMenu.appendChild(createButton("Play", "rgba(2, 184, 32, 1)", "10%", "10%", () => hideAllMenus(renderer.domElement)));
+mainMenu.appendChild(createButton("Levels", "rgba(161, 14, 219, 1)", "10%", "10%", () => showMenu(levelMenu)));
+mainMenu.appendChild(createButton("Restart", "rgba(161, 9, 9, 1)", "10%", "10%", () => resetScene()));
 
-levelMenu.appendChild(createButton("Level 1", () => console.log("Level 1 Selected!")));
-levelMenu.appendChild(createButton("Level 2", () => console.log("Level 2 Selected!")));
-levelMenu.appendChild(createButton("Level 3", () => console.log("Level 3 Selected!")));
+levelMenu.appendChild(createButton("Level 1", "rgba(140, 235, 16, 1)", "10%", "20%",() => console.log("Level 1 Selected!")));
+levelMenu.appendChild(createButton("Level 2", "rgba(9, 161, 128, 1)", "10%", "20%",() => console.log("Level 2 Selected!")));
 
 // Save the default camera position & rotation
 const defaultCameraPosition = new THREE.Vector3(0, 4, 10);
