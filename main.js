@@ -4,6 +4,7 @@ import { setupPlayerControls } from './src/Player/playerController.js';
 import { createHammer } from './src/Weapons/hammer.js';
 import { createCartoonBomb } from './src/Weapons/grenade.js';
 import { createDynamite } from './src/Weapons/grenade.js';
+import { menuState, createMenu, createButton, showMenu, hideAllMenus } from './src/userInterface.js';
 
 // Basic setup
 const scene = new THREE.Scene();
@@ -14,6 +15,22 @@ const audioLoader = new THREE.AudioLoader();
 
 // Chnages skybox color to sky blue
 scene.background = new THREE.Color(0x87CEEB);
+
+// Creates the menus
+const mainMenu = createMenu("rgba(204, 155, 114, 0.9)", "column");
+const levelMenu = createMenu("rgba(92, 141, 197, 0.9)", "row");
+
+document.body.appendChild(mainMenu);
+document.body.appendChild(levelMenu);
+
+
+// Adds buttons to the menus
+mainMenu.appendChild(createButton("Play", () => hideAllMenus(renderer.domElement)));
+mainMenu.appendChild(createButton("Levels", () => showMenu(levelMenu)));
+
+levelMenu.appendChild(createButton("Level 1", () => console.log("Level 1 Selected!")));
+levelMenu.appendChild(createButton("Level 2", () => console.log("Level 2 Selected!")));
+levelMenu.appendChild(createButton("Level 3", () => console.log("Level 3 Selected!")));
 
 // Save the default camera position & rotation
 const defaultCameraPosition = new THREE.Vector3(0, 4, 10);
@@ -202,6 +219,26 @@ function onKeyDown(event) {
             break;
     }
 }
+
+// Handle keyboard input for menu
+document.addEventListener("keydown", (event) => {
+    if (event.key.toLowerCase() === "m") {
+        if (!menuState.mainMenuUp) {
+            if (document.pointerLockElement) {
+                document.exitPointerLock();
+            }
+            showMenu(mainMenu);
+            menuState.mainMenuUp = true;
+        } else {
+            if (!document.pointerLockElement) {
+                renderer.domElement.requestPointerLock();
+            }
+            hideAllMenus(renderer.domElement);
+            menuState.mainMenuUp = false
+        }
+    }
+});
+
 function playExplosionSoundAt(position) {
     if (!explosionBuffer) return; // buffer not ready yet
 
