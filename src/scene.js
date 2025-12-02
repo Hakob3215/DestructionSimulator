@@ -4,7 +4,7 @@ export function createVoxelWorld(levelUrl, onLoadCallback) {
     const worldGroup = new THREE.Group();
 
     // Create ground plane
-    const planeGeometry = new THREE.PlaneGeometry(100, 100);
+    const planeGeometry = new THREE.PlaneGeometry(1000, 1000);
     const planeMaterial = new THREE.MeshStandardMaterial({ color: 0xcccccc, side: THREE.DoubleSide });
     const plane = new THREE.Mesh(planeGeometry, planeMaterial);
     plane.rotation.x = -Math.PI / 2; // Rotate to be horizontal

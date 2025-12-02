@@ -49,6 +49,7 @@ winScreen.appendChild(createButton("Retry", "rgba(161, 9, 9, 1)", "15%", "10%", 
 const levels = [
     { name: "Default Level", file: "level.txt" },
     { name: "Monument", file: "monu.txt" },
+    { name: "Farm", file: "farm.txt"}
     // Add more levels here as you add files to the public folder
     // { name: "London", file: "london.txt" },
 ];
@@ -459,7 +460,7 @@ function throwGrenade() {
     thrown.userData.isGrenade = true;
 
     // Apply forward throw impulse
-    const throwForce = 25;
+    const throwForce = 50;
     const forward = new THREE.Vector3();
     camera.getWorldDirection(forward);  // Get world-space forward
     thrown.userData.velocity.copy(forward.multiplyScalar(throwForce));
