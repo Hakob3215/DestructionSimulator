@@ -9,7 +9,7 @@ export function setupPlayerControls(camera, rendererDomElement) {
         d: false 
     };
 
-    const playerSpeed = 10.0;
+    const playerSpeed = 25.0;
     const sensitivity = 0.002;
 
     // Create a playerObject (Group) to represent the player's body
@@ -29,8 +29,8 @@ export function setupPlayerControls(camera, rendererDomElement) {
 
     // Physics variables
     let velocityY = 0;
-    const gravity = -30.0;
-    const jumpStrength = 12.0;
+    const gravity = -35.0;
+    const jumpStrength = 25.0;
     let isGrounded = false;
 
     // Track key states

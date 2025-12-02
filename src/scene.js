@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export function createVoxelWorld(onLoadCallback) {
+export function createVoxelWorld(levelUrl, onLoadCallback) {
     const worldGroup = new THREE.Group();
 
     // Create ground plane
@@ -81,7 +81,7 @@ export function createVoxelWorld(onLoadCallback) {
     */
 
     // Load Level from Text File
-    fetch('/level.txt') 
+    fetch(levelUrl) 
         .then(response => response.text())
         .then(text => {
             // Goxel txt format: X Y Z RRGGBB

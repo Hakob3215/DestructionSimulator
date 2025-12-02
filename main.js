@@ -32,8 +32,26 @@ mainMenu.appendChild(createButton("Play", "rgba(2, 184, 32, 1)", "10%", "10%", (
 mainMenu.appendChild(createButton("Levels", "rgba(161, 14, 219, 1)", "10%", "10%", () => showMenu(levelMenu)));
 mainMenu.appendChild(createButton("Restart", "rgba(161, 9, 9, 1)", "10%", "10%", () => resetScene()));
 
-levelMenu.appendChild(createButton("Level 1", "rgba(140, 235, 16, 1)", "10%", "20%",() => console.log("Level 1 Selected!")));
-levelMenu.appendChild(createButton("Level 2", "rgba(9, 161, 128, 1)", "10%", "20%",() => console.log("Level 2 Selected!")));
+
+// Level Configuration
+const levels = [
+    { name: "Default Level", file: "level.txt" },
+    { name: "Monument", file: "monu.txt" },
+    // Add more levels here as you add files to the public folder
+    // { name: "London", file: "london.txt" },
+];
+
+let currentLevel = levels[0].file;
+
+levels.forEach(level => {
+    levelMenu.appendChild(createButton(level.name, "rgba(140, 235, 16, 1)", "10%", "20%",() => {
+        console.log(`${level.name} Selected!`);
+        currentLevel = level.file;
+        resetScene();
+        hideAllMenus(renderer.domElement);
+    }));
+});
+
 
 // Save the default camera position & rotation
 const defaultCameraPosition = new THREE.Vector3(0, 4, 10);
@@ -56,7 +74,7 @@ renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 
 // Create the world
-let worldGroup = createVoxelWorld((count) => {
+let worldGroup = createVoxelWorld(currentLevel, (count) => {
     totalVoxels = count;
     destroyedVoxels = 0;
     updateDestructionMeter();
@@ -114,7 +132,7 @@ function updateDestructionMeter() {
     if (bar && text && totalVoxels > 0) {
         const percent = Math.min(100, Math.max(0, (destroyedVoxels / totalVoxels) * 100));
         bar.style.width = percent + '%';
-        text.innerText = `Destruction: ${Math.round(percent)}%`;
+        text.innerText = `Destruction: ${Math.floor(percent)}%`;
     } else if (bar && text && totalVoxels === 0) {
         bar.style.width = '0%';
         text.innerText = `Destruction: 0%`;
@@ -363,9 +381,9 @@ function createExplosionEffect(position) {
 
 // Explosion Variables
 const grenadeExplosionForce = 75.0;
-const grenadeExplosionRadius = 5.0
-const hammerExplosionForce = 15.0;
-const hammerExplosionRadius = 2.0;
+const grenadeExplosionRadius = 15.0
+const hammerExplosionForce = 150.0;
+const hammerExplosionRadius = 20.0;
 
 
 
@@ -834,7 +852,7 @@ function resetScene() {
     updateDestructionMeter();
 
     // Recreate world
-    worldGroup = createVoxelWorld((count) => {
+    worldGroup = createVoxelWorld(currentLevel, (count) => {
         totalVoxels = count;
         destroyedVoxels = 0;
         updateDestructionMeter();
