@@ -392,7 +392,7 @@ function createExplosionEffect(position) {
 
     // ---------- Animation state ----------
     let elapsed = 0;
-    let multiplier = isNukeMode ? 8.0 : 1.0;
+    let multiplier = isNukeMode ? 2.5 : 1.0;
     // ---------- Update Explosion ----------
     function updateExplosionEffect(deltaTime) {
         elapsed += deltaTime;
@@ -428,10 +428,10 @@ function createExplosionEffect(position) {
 }
 
 // Explosion Variables
-const grenadeExplosionForce = 15.0;
-const grenadeExplosionRadius = 2.0
-const hammerExplosionForce = 75.0;
-const hammerExplosionRadius = 5.0;
+const grenadeExplosionForce = 40.0;
+const grenadeExplosionRadius = 4.0
+const hammerExplosionForce = 60.0;
+const hammerExplosionRadius = 6.0;
 
 let isNukeMode = false;
 
@@ -525,7 +525,7 @@ function checkHammerCollisions() {
                 const position = new THREE.Vector3().setFromMatrixPosition(matrix);
 
                 console.log("Hammer hit voxel!");
-                const multiplier = isNukeMode ? 8.0 : 1.0;
+                const multiplier = isNukeMode ? 2.5 : 1.0;
                 triggerExplosion(position, hammerExplosionForce * multiplier, hammerExplosionRadius * multiplier);
                 rockSmashSound.clone(true).play();
                 break;
@@ -535,7 +535,7 @@ function checkHammerCollisions() {
         // Check for Dynamic Objects (Debris)
         if (object.userData.boundingBox && !object.userData.isHit) {
             console.log("Hammer hit debris!");
-            const multiplier = isNukeMode ? 8.0 : 1.0;
+            const multiplier = isNukeMode ? 2.5 : 1.0;
             triggerExplosion(object.position, hammerExplosionForce * multiplier, hammerExplosionRadius * multiplier);
             rockSmashSound.clone(true).play();
             break; 
@@ -581,7 +581,7 @@ function updatePhysics(time) {
             if (obj.userData.life <= 0) {
                 // Remove from scene and trigger explosion of grenade
                 if (obj.userData.isGrenade) {
-                    const multiplier = isNukeMode ? 8.0 : 1.0;
+                    const multiplier = isNukeMode ? 2.5 : 1.0;
                     triggerExplosion(obj.position, grenadeExplosionForce * multiplier, grenadeExplosionRadius * multiplier);
                     createExplosionEffect(obj.position);
                     playExplosionSoundAt(obj.position);
@@ -642,7 +642,7 @@ function updatePhysics(time) {
                 // Collision with static voxel!
                 
                 if (obj.userData.isGrenade) {
-                    const multiplier = isNukeMode ? 8.0 : 1.0;
+                    const multiplier = isNukeMode ? 2.5 : 1.0;
                     triggerExplosion(obj.position, grenadeExplosionForce * multiplier, grenadeExplosionRadius * multiplier);
                     createExplosionEffect(obj.position);
                     playExplosionSoundAt(obj.position);
