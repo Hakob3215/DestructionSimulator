@@ -3,7 +3,7 @@ import * as THREE from 'three';
 export function createDynamite() {
     const group = new THREE.Group();
 
-    // Common Material
+    // Color
     const redMat = new THREE.MeshStandardMaterial({
         color: 0xcc0000,
         roughness: 0.4,
@@ -41,7 +41,7 @@ export function createDynamite() {
         return stickGroup;
     }
 
-    // 3 sticks arranged triangular
+    // Positioning the 3 sticks
     const stick1 = createStick();
     const stick2 = createStick();
     const stick3 = createStick();
@@ -52,7 +52,7 @@ export function createDynamite() {
 
     group.add(stick1, stick2, stick3);
 
-    // Straps
+    // Adding the straps
     const strapGeo = new THREE.BoxGeometry(2, 0.1, 0.6);
     const strapMat = new THREE.MeshStandardMaterial({
         color: 0x111111,
