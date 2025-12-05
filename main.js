@@ -350,7 +350,7 @@ function playExplosionSoundAt(position) {
 
 // Explosion Effect variables
 const explosionLightIntensity = 8;
-const explosionEffectRadius = 2.0;  
+// const explosionEffectRadius = 2.0;  
 const explosionEffectDuration = 0.5;
 const castShadows = false;  // Currently false to reduce lag from many explosions (can change later)
 
@@ -373,10 +373,12 @@ dummyExplosion.position.set(0, -1000, 0); // Hide it
 dummyExplosion.frustumCulled = false; // Force it to be "rendered" even if off-screen (though Three.js might still cull it)
 scene.add(dummyExplosion);
 
-function createExplosionEffect(position) {
+function createExplosionEffect(position, color, emissive, explosionEffectRadius) {
     // ---------- Explosion Sphere ----------
     // Clone material so we can fade opacity independently
     const sphereMaterial = sharedExplosionMaterial.clone();
+    sphereMaterial.color.set(color);
+    sphereMaterial.emissive.set(emissive);
 
     const explosionSphere = new THREE.Mesh(sharedExplosionGeometry, sphereMaterial);
     explosionSphere.position.copy(position);
@@ -527,6 +529,7 @@ function checkHammerCollisions() {
                 console.log("Hammer hit voxel!");
                 const multiplier = isNukeMode ? 2.5 : 1.0;
                 triggerExplosion(position, hammerExplosionForce * multiplier, hammerExplosionRadius * multiplier);
+                createExplosionEffect(position, 0xffffff, 0xffffff, hammerExplosionRadius);
                 rockSmashSound.clone(true).play();
                 break;
             }
@@ -537,6 +540,7 @@ function checkHammerCollisions() {
             console.log("Hammer hit debris!");
             const multiplier = isNukeMode ? 2.5 : 1.0;
             triggerExplosion(object.position, hammerExplosionForce * multiplier, hammerExplosionRadius * multiplier);
+            createExplosionEffect(object.position, 0xffffff, 0xffffff, hammerExplosionRadius);
             rockSmashSound.clone(true).play();
             break; 
         }
@@ -583,7 +587,7 @@ function updatePhysics(time) {
                 if (obj.userData.isGrenade) {
                     const multiplier = isNukeMode ? 2.5 : 1.0;
                     triggerExplosion(obj.position, grenadeExplosionForce * multiplier, grenadeExplosionRadius * multiplier);
-                    createExplosionEffect(obj.position);
+                    createExplosionEffect(obj.position, 0xff5500, 0xff2200, grenadeExplosionRadius);
                     playExplosionSoundAt(obj.position);
                     obj.userData.fuseSound.stop();
                     obj.userData.fuseSound.disconnect();
@@ -644,7 +648,7 @@ function updatePhysics(time) {
                 if (obj.userData.isGrenade) {
                     const multiplier = isNukeMode ? 2.5 : 1.0;
                     triggerExplosion(obj.position, grenadeExplosionForce * multiplier, grenadeExplosionRadius * multiplier);
-                    createExplosionEffect(obj.position);
+                    createExplosionEffect(obj.position, 0xff5500, 0xff2200, grenadeExplosionRadius);
                     playExplosionSoundAt(obj.position);
                     obj.userData.fuseSound.stop();
                     obj.userData.fuseSound.disconnect();
