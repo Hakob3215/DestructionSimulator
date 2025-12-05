@@ -44,5 +44,3 @@ export function scalingMatrix(sx, sy, sz) {
     0, 0, 0, 1
   );
 }
-
-// Feel free to add helper functions if needed
