@@ -13,13 +13,13 @@ export function setupPlayerControls(camera, rendererDomElement) {
     const sensitivity = 0.002;
 
     // Create a playerObject (Group) to represent the player's body
-    // This object handles position and Y-rotation (Yaw)
+    // This object handles position and Y-rotation
     const playerObject = new THREE.Group();
     playerObject.position.copy(camera.position); // Start at camera's initial world position
     
     // Reset camera to local origin of the player object
-    // The camera now handles X-rotation (Pitch)
-    camera.position.set(0, 1.8, 0); // Higher camera view (approx 3.8m total height)
+    // The camera now handles X-rotation
+    camera.position.set(0, 1.8, 0); // Higher camera view
     camera.rotation.set(0, 0, 0);
     playerObject.add(camera);
 
@@ -54,10 +54,10 @@ export function setupPlayerControls(camera, rendererDomElement) {
     document.addEventListener("mousemove", (event) => {
         if (document.pointerLockElement !== rendererDomElement) return;
 
-        // Rotate player body left/right (Yaw)
+        // Rotate player body left/right
         playerObject.rotation.y -= event.movementX * sensitivity;
 
-        // Rotate camera up/down (Pitch)
+        // Rotate camera up/down
         camera.rotation.x -= event.movementY * sensitivity;
         
         // Clamp pitch to avoid flipping
@@ -66,7 +66,7 @@ export function setupPlayerControls(camera, rendererDomElement) {
     });
 
     function updatePlayerMovement(time, onCheckCollision) {
-        // --- 1. Vertical Movement (Gravity & Jumping) ---
+        // --- Vertical Movement (Gravity & Jumping) ---
         velocityY += gravity * time;
         const deltaY = velocityY * time;
         
@@ -101,7 +101,7 @@ export function setupPlayerControls(camera, rendererDomElement) {
             isGrounded = false;
         }
 
-        // --- 2. Horizontal Movement ---
+        // --- Horizontal Movement ---
         const direction = new THREE.Vector3();
         
         // Get forward and right vectors relative to the player's rotation
@@ -144,7 +144,7 @@ export function setupPlayerControls(camera, rendererDomElement) {
             }
         }
         
-        // Kill floor (Reset if falling into void)
+        // Reset if falling into void
         if (playerObject.position.y < -50) {
             playerObject.position.set(0, 10, 10);
             velocityY = 0;
