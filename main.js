@@ -24,6 +24,18 @@ document.body.appendChild(mainMenu);
 document.body.appendChild(levelMenu);
 document.body.appendChild(winScreen);
 
+// Nuke Mode Icon
+const nukeIcon = document.createElement('div');
+nukeIcon.style.position = 'absolute';
+nukeIcon.style.bottom = '20px';
+nukeIcon.style.right = '20px';
+nukeIcon.style.fontSize = '80px';
+nukeIcon.style.display = 'none';
+nukeIcon.style.pointerEvents = 'none';
+nukeIcon.style.userSelect = 'none';
+nukeIcon.innerHTML = '☢️'; 
+document.body.appendChild(nukeIcon);
+
 // Creates text for menus
 const mainMenuText = createTitleText("Destruction Simulator", "white");
 const winnerText = createTitleText("YOU WIN!!!!!!!!", "rgba(0, 255, 34, 1)");
@@ -47,20 +59,22 @@ winScreen.appendChild(createButton("Retry", "rgba(161, 9, 9, 1)", "15%", "10%", 
 
 // Level Configuration
 const levels = [
-    { name: "Default Level", file: "level.txt" },
-    { name: "Monument", file: "monu.txt" },
-    { name: "Farm", file: "farm.txt"},
-    { name: "Graveyard", file: "graveyard.txt"}
+    { name: "Default Level", file: "level.txt", spawn: { x: 0, y: 40, z: 10 } },
+    { name: "Monument", file: "monu.txt", spawn: { x: 0, y: 4, z: 10 } },
+    { name: "Farm", file: "farm.txt", spawn: { x: 0, y: 40, z: 40 } },
+    { name: "Graveyard", file: "graveyard.txt", spawn: { x: 0, y: 60, z: 10 } }
     // Add more levels here as you add files to the public folder
-    // { name: "London", file: "london.txt" },
+    // { name: "London", file: "london.txt", spawn: { x: 0, y: 4, z: 10 } },
 ];
 
 let currentLevel = levels[0].file;
+let currentSpawn = new THREE.Vector3(levels[0].spawn.x, levels[0].spawn.y, levels[0].spawn.z);
 
 levels.forEach(level => {
     levelMenu.appendChild(createButton(level.name, "rgba(99, 4, 128, 1)", "12.5%", "25%", () => {
         console.log(`${level.name} Selected!`);
         currentLevel = level.file;
+        currentSpawn.set(level.spawn.x, level.spawn.y, level.spawn.z);
         resetScene();
         hideAllMenus(renderer.domElement);
     }));
@@ -71,7 +85,7 @@ levels.forEach(level => {
 const defaultCameraPosition = new THREE.Vector3(0, 4, 10);
 const defaultCameraRotation = new THREE.Euler(0, 0, 0);
 
-camera.position.copy(defaultCameraPosition);
+camera.position.copy(currentSpawn);
 camera.rotation.copy(defaultCameraRotation);
 
 // Attaches audio listener to camera
@@ -168,6 +182,7 @@ scene.add(playerObject);
 
 // Helper to see hitbox of the Player
 const playerHelper = new THREE.Box3Helper(playerBox, 0x00ff00);
+playerHelper.visible = false;
 scene.add(playerHelper);
 
 // Loads sound files
@@ -222,7 +237,13 @@ function animate() {
 
         // Simple swing animation: move forward and back
         const swingAngle = Math.sin(swingProgress * Math.PI) * -Math.PI / 2;
-        hammer.rotation.z = swingAngle;
+        
+        // COURSE REQUIREMENT: Matrix Transformations
+        // We use explicit matrix transformations to animate the hammer rotation
+        const rotY = new THREE.Matrix4().makeRotationY(Math.PI / 2); // Base rotation
+        const rotZ = new THREE.Matrix4().makeRotationZ(swingAngle);  // Swing rotation
+        const combinedMatrix = rotY.multiply(rotZ);                  // Combine Y * Z
+        hammer.rotation.setFromRotationMatrix(combinedMatrix);       // Apply to object
 
         // Check for hammer collision at the peak of the swing
         if (swingProgress > 0.3 && swingProgress < 0.7) {
@@ -283,6 +304,7 @@ function onKeyDown(event) {
         case 'N':
             isNukeMode = !isNukeMode;
             console.log(`Nuke Mode: ${isNukeMode ? "ON" : "OFF"}`);
+            nukeIcon.style.display = isNukeMode ? 'block' : 'none';
             break;
     }
 }
@@ -900,12 +922,12 @@ function resetScene() {
     scene.userData.staticVoxels = null; 
 
     // Reset player
-    playerObject.position.copy(defaultPlayerPosition);
+    playerObject.position.copy(currentSpawn);
     playerObject.rotation.copy(defaultPlayerRotation);
 }
 
 // Debug Toggle (Press 'H')
-let isDebugVisible = true;
+let isDebugVisible = false;
 document.addEventListener('keydown', (event) => {
     if (event.key.toLowerCase() === 'h') {
         isDebugVisible = !isDebugVisible;
