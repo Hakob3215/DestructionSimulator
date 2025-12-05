@@ -178,7 +178,6 @@ const { updatePlayerMovement, playerObject, playerBox, playerBoxSize } = setupPl
 
 // Add the playerObject (camera parent) to the scene
 scene.add(playerObject);
-// No need to copy position again as setupPlayerControls already did it based on camera's initial position
 
 // Helper to see hitbox of the Player
 const playerHelper = new THREE.Box3Helper(playerBox, 0x00ff00);
@@ -238,8 +237,7 @@ function animate() {
         // Simple swing animation: move forward and back
         const swingAngle = Math.sin(swingProgress * Math.PI) * -Math.PI / 2;
         
-        // COURSE REQUIREMENT: Matrix Transformations
-        // We use explicit matrix transformations to animate the hammer rotation
+        // Explicit matrix transformations to animate the hammer rotation
         const rotY = new THREE.Matrix4().makeRotationY(Math.PI / 2); // Base rotation
         const rotZ = new THREE.Matrix4().makeRotationZ(swingAngle);  // Swing rotation
         const combinedMatrix = rotY.multiply(rotZ);                  // Combine Y * Z
@@ -348,12 +346,9 @@ function playExplosionSoundAt(position) {
     };
 }
 
-// Explosion Effect variables
-const explosionLightIntensity = 8;
-// const explosionEffectRadius = 2.0;  
-const explosionEffectDuration = 0.5;
-const castShadows = false;  // Currently false to reduce lag from many explosions (can change later)
 
+
+const explosionEffectDuration = 0.5;
 
 // Pre-allocate geometry to reduce GC
 const sharedExplosionGeometry = new THREE.SphereGeometry(1, 32, 32);
@@ -384,14 +379,6 @@ function createExplosionEffect(position, color, emissive, explosionEffectRadius)
     explosionSphere.position.copy(position);
     scene.add(explosionSphere);
 
-    // ---------- Explosion Light ----------
-    // const explosionLight = new THREE.PointLight(0xffaa55, explosionLightIntensity, 20);
-    // explosionLight.castShadow = castShadows; 
-    // //explosionLight.shadow.mapSize.width = 256;
-    // //explosionLight.shadow.mapSize.height = 256;
-    // explosionLight.position.copy(position);
-    // scene.add(explosionLight);
-
     // ---------- Animation state ----------
     let elapsed = 0;
     let multiplier = isNukeMode ? 2.5 : 1.0;
@@ -404,11 +391,7 @@ function createExplosionEffect(position, color, emissive, explosionEffectRadius)
         if (t >= 1) {
             // Cleanup
             scene.remove(explosionSphere);
-            // Do NOT dispose geometry as it is shared
-            // explosionSphere.geometry.dispose(); 
             explosionSphere.material.dispose();
-
-            // scene.remove(explosionLight);
 
             activeExplosions.splice(activeExplosions.indexOf(updateExplosionEffect), 1);
             return;
@@ -420,9 +403,6 @@ function createExplosionEffect(position, color, emissive, explosionEffectRadius)
 
         // Fade opacity
         explosionSphere.material.opacity = 1 - t;
-
-        // Light fade
-        // explosionLight.intensity = explosionLightIntensity * (1 - t);
     }
 
     // Register explosion for animation loop
@@ -458,7 +438,7 @@ function throwGrenade() {
         thrown.add(fuseBurnSound);
         fuseBurnSound.play();
         
-        // Optional: save reference for stopping later on explosion
+        // Reference for stopping later on explosion
         thrown.userData.fuseSound = fuseBurnSound;
     }
 
@@ -558,10 +538,6 @@ function applyPhysicsToVoxel(voxel) {
         scene.userData.physicsObjects = [];
     }
     scene.userData.physicsObjects.push(voxel);
-
-    // OPTIMIZATION: Do NOT search and remove from staticVoxels here.
-    // The caller (triggerExplosion) is responsible for removing it from the static list.
-    // This avoids an O(N) linear scan for every single block, which causes massive lag.
 }
 
 function updatePhysics(time) {
@@ -671,8 +647,6 @@ function updatePhysics(time) {
                     obj.userData.velocity.multiplyScalar(-0.5);
                 } else {
                     // Just bounce
-                    // Determine normal based on previous position? 
-                    // Simplified: just reverse velocity and push out
                     obj.userData.velocity.multiplyScalar(-0.5);
                     
                     // Push out towards previous position (approximate)
@@ -827,8 +801,7 @@ function triggerExplosion(center, force, radius) {
         }
     }
     
-    // Also check for dynamic objects (debris) in range
-    // This is still O(N) on debris count, but debris count is usually small compared to static world
+    // Check for dynamic objects (debris) in range
     if (scene.userData.physicsObjects) {
         const radiusSq = radius * radius;
         for (const obj of scene.userData.physicsObjects) {
