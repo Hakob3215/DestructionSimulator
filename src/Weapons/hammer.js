@@ -9,7 +9,7 @@ export function createHammer() {
     const handleMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
     const handle = new THREE.Mesh(handleGeometry, handleMaterial);
 
-    handle.position.y = 0.7; // aligns bottom of handle with y = 0
+    handle.position.y = 0.7;
     hammer.add(handle);
 
     // Hammer Head
@@ -17,7 +17,7 @@ export function createHammer() {
     const headMaterial = new THREE.MeshStandardMaterial({ color: 0x555555 });
     const head = new THREE.Mesh(headGeometry, headMaterial);
 
-    head.position.y = 1.4; // sits on top of the shorter handle
+    head.position.y = 1.4;
     hammer.add(head);
 
     return hammer;
