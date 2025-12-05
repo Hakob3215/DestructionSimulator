@@ -127,11 +127,10 @@ hammer.rotation.set(0, Math.PI / 2, 0);
 const leftHand = new THREE.Group();
 camera.add(leftHand);
 
-// Position the grenade hand relative to the camera (adjust as needed)
+// Position the grenade hand relative to the camera
 leftHand.position.set(-1.2, -1, -3);
 leftHand.rotation.set(0, 0, 0);
 
-// Create grenade (choose one)
 //const grenade = createCartoonBomb();
 const grenade = createDynamite();
 
@@ -282,7 +281,7 @@ document.addEventListener("mousedown", (e) => {
 
 // Handle mouse click for hammer swing
 document.addEventListener('mousedown', (e) => {
-    if (e.button === 0) { // LEFT CLICK ONLY
+    if (e.button === 0) { // Left Click
         if (!isSwinging) {
             isSwinging = true;
             hammerSwingSound.clone(true).play();
@@ -369,7 +368,7 @@ dummyExplosion.frustumCulled = false; // Force it to be "rendered" even if off-s
 scene.add(dummyExplosion);
 
 function createExplosionEffect(position, color, emissive, explosionEffectRadius) {
-    // ---------- Explosion Sphere ----------
+    // Explosion Sphere
     // Clone material so we can fade opacity independently
     const sphereMaterial = sharedExplosionMaterial.clone();
     sphereMaterial.color.set(color);
@@ -379,10 +378,10 @@ function createExplosionEffect(position, color, emissive, explosionEffectRadius)
     explosionSphere.position.copy(position);
     scene.add(explosionSphere);
 
-    // ---------- Animation state ----------
+    // Animation state
     let elapsed = 0;
     let multiplier = isNukeMode ? 2.5 : 1.0;
-    // ---------- Update Explosion ----------
+    // Update Explosion
     function updateExplosionEffect(deltaTime) {
         elapsed += deltaTime;
 
@@ -619,7 +618,7 @@ function updatePhysics(time) {
             const key = `${checkX},${checkY + 0.5},${checkZ}`;
 
             if (voxelMap.has(key)) {
-                // Collision with static voxel!
+                // Collision with static voxel
                 
                 if (obj.userData.isGrenade) {
                     const multiplier = isNukeMode ? 2.5 : 1.0;
@@ -658,8 +657,8 @@ function updatePhysics(time) {
         }
     }
 
-    // Check for collisions between physics objects (Dynamic-Dynamic)
-    // This prevents them from overlapping on the floor
+    // Check for collisions between physics objects 
+    // Prevent them from overlapping on the floor
     for (let i = 0; i < scene.userData.physicsObjects.length; i++) {
         for (let j = i + 1; j < scene.userData.physicsObjects.length; j++) {
             const obj1 = scene.userData.physicsObjects[i];
@@ -815,20 +814,6 @@ function triggerExplosion(center, force, radius) {
 
 function checkCollisions() {
     if (!playerBox) return false;
-
-    // Check collision with Dynamic Objects (Debris)
-    // We intentionally IGNORE debris for player movement so they don't get stuck
-    /*
-    let collided = false;
-    if (scene.userData.physicsObjects) {
-        for (const obj of scene.userData.physicsObjects) {
-            if (obj.userData.boundingBox && playerBox.intersectsBox(obj.userData.boundingBox)) {
-                collided = true;
-            }
-        }
-    }
-    if (collided) return true;
-    */
 
     // Check collision with Static World (InstancedMesh)
     const voxelMap = worldGroup.userData.voxelMap;
