@@ -167,8 +167,18 @@ export function createVoxelWorld(levelUrl, onLoadCallback) {
     directionalLight.add(sunMesh);
 
     // Configure shadow properties for the light
-    directionalLight.shadow.mapSize.width = 2048;
-    directionalLight.shadow.mapSize.height = 2048;
+    directionalLight.shadow.mapSize.width = 4096;
+    directionalLight.shadow.mapSize.height = 4096;
+    directionalLight.shadow.camera.near = 0.5;
+    directionalLight.shadow.camera.far = 500;
+    directionalLight.shadow.camera.left = -100;
+    directionalLight.shadow.camera.right = 100;
+    directionalLight.shadow.camera.top = 100;
+    directionalLight.shadow.camera.bottom = -100;
+    
+    // Soft Shadows
+    directionalLight.shadow.radius = 4; 
+    directionalLight.shadow.bias = -0.0005; // Reduces shadow acne
 
     return worldGroup;
 }
