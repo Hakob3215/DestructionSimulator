@@ -24,6 +24,18 @@ document.body.appendChild(mainMenu);
 document.body.appendChild(levelMenu);
 document.body.appendChild(winScreen);
 
+// Nuke Mode Icon
+const nukeIcon = document.createElement('div');
+nukeIcon.style.position = 'absolute';
+nukeIcon.style.bottom = '20px';
+nukeIcon.style.right = '20px';
+nukeIcon.style.fontSize = '80px';
+nukeIcon.style.display = 'none';
+nukeIcon.style.pointerEvents = 'none';
+nukeIcon.style.userSelect = 'none';
+nukeIcon.innerHTML = '☢️'; 
+document.body.appendChild(nukeIcon);
+
 // Creates text for menus
 const mainMenuText = createTitleText("Destruction Simulator", "white");
 const winnerText = createTitleText("YOU WIN!!!!!!!!", "rgba(0, 255, 34, 1)");
@@ -47,10 +59,10 @@ winScreen.appendChild(createButton("Retry", "rgba(161, 9, 9, 1)", "15%", "10%", 
 
 // Level Configuration
 const levels = [
-    { name: "Default Level", file: "level.txt", spawn: { x: 0, y: 4, z: 10 } },
+    { name: "Default Level", file: "level.txt", spawn: { x: 0, y: 40, z: 10 } },
     { name: "Monument", file: "monu.txt", spawn: { x: 0, y: 4, z: 10 } },
-    { name: "Farm", file: "farm.txt", spawn: { x: 0, y: 4, z: 10 } },
-    { name: "Graveyard", file: "graveyard.txt", spawn: { x: 0, y: 4, z: 10 } }
+    { name: "Farm", file: "farm.txt", spawn: { x: 0, y: 40, z: 40 } },
+    { name: "Graveyard", file: "graveyard.txt", spawn: { x: 0, y: 60, z: 10 } }
     // Add more levels here as you add files to the public folder
     // { name: "London", file: "london.txt", spawn: { x: 0, y: 4, z: 10 } },
 ];
@@ -170,6 +182,7 @@ scene.add(playerObject);
 
 // Helper to see hitbox of the Player
 const playerHelper = new THREE.Box3Helper(playerBox, 0x00ff00);
+playerHelper.visible = false;
 scene.add(playerHelper);
 
 // Loads sound files
@@ -291,6 +304,7 @@ function onKeyDown(event) {
         case 'N':
             isNukeMode = !isNukeMode;
             console.log(`Nuke Mode: ${isNukeMode ? "ON" : "OFF"}`);
+            nukeIcon.style.display = isNukeMode ? 'block' : 'none';
             break;
     }
 }
@@ -913,7 +927,7 @@ function resetScene() {
 }
 
 // Debug Toggle (Press 'H')
-let isDebugVisible = true;
+let isDebugVisible = false;
 document.addEventListener('keydown', (event) => {
     if (event.key.toLowerCase() === 'h') {
         isDebugVisible = !isDebugVisible;
