@@ -25,7 +25,7 @@ export function setupPlayerControls(camera, rendererDomElement) {
 
     // Hitbox
     const playerBox = new THREE.Box3();
-    const playerBoxSize = new THREE.Vector3(1, 4, 1); // Taller player (4 units tall)
+    const playerBoxSize = new THREE.Vector3(1, 4, 1);
 
     // Physics variables
     let velocityY = 0;
