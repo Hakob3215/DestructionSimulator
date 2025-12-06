@@ -223,7 +223,7 @@ function animate() {
 
 	const time = clock.getDelta();
     
-    // Pass checkCollisions as a callback to allow axis-independent collision resolution (wall sliding)
+    // Pass checkCollisions as a callback to allow wall sliding
 	updatePlayerMovement(time, checkCollisions);
 
     updatePhysics(time); // Update physics for hit objects
@@ -368,7 +368,7 @@ scene.add(dummyExplosion);
 
 function createExplosionEffect(position, color, emissive, explosionEffectRadius) {
     // Explosion Sphere
-    // Clone material so we can fade opacity independently
+    // Clone material to fade opacity independently
     const sphereMaterial = sharedExplosionMaterial.clone();
     sphereMaterial.color.set(color);
     sphereMaterial.emissive.set(emissive);
@@ -779,7 +779,7 @@ function triggerExplosion(center, force, radius) {
                 if (x*x + y*y + z*z > radius*radius) continue;
 
                 const checkX = centerX + x;
-                const checkY = centerY + y; // Integer Y
+                const checkY = centerY + y;
                 const checkZ = centerZ + z;
                 
                 // The map keys use Y + 0.5
@@ -832,7 +832,7 @@ function checkCollisions() {
             for (let y = minY; y <= maxY; y++) {
                 const key = `${x},${y + 0.5},${z}`;
                 if (voxelMap.has(key)) {
-                    // Precise AABB check
+                    // AABB check
                     const voxelBox = new THREE.Box3();
                     voxelBox.min.set(x - 0.5, y, z - 0.5);
                     voxelBox.max.set(x + 0.5, y + 1, z + 0.5);
