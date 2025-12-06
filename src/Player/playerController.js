@@ -60,13 +60,13 @@ export function setupPlayerControls(camera, rendererDomElement) {
         // Rotate camera up/down
         camera.rotation.x -= event.movementY * sensitivity;
         
-        // Clamp pitch to avoid flipping
+        // Clamp X-rotation to avoid flipping
         const limit = Math.PI / 2 - 0.01;
         camera.rotation.x = Math.max(-limit, Math.min(limit, camera.rotation.x));
     });
 
     function updatePlayerMovement(time, onCheckCollision) {
-        // --- Vertical Movement (Gravity & Jumping) ---
+        // Vertical Movement (Gravity & Jumping)
         velocityY += gravity * time;
         const deltaY = velocityY * time;
         
@@ -74,7 +74,7 @@ export function setupPlayerControls(camera, rendererDomElement) {
         playerObject.position.y += deltaY;
         playerBox.setFromCenterAndSize(playerObject.position, playerBoxSize);
 
-        // Floor Check (Simple Y check)
+        // Floor Check
         // Player height is 4.0, center is at 2.0 relative to feet.
         if (playerObject.position.y < 2.0) {
             playerObject.position.y = 2.0;
@@ -89,7 +89,7 @@ export function setupPlayerControls(camera, rendererDomElement) {
             playerBox.setFromCenterAndSize(playerObject.position, playerBoxSize);
 
             if (velocityY < 0) {
-                // We hit the ground (voxel)
+                // We hit the ground
                 isGrounded = true;
                 velocityY = 0;
             } else {
@@ -101,7 +101,7 @@ export function setupPlayerControls(camera, rendererDomElement) {
             isGrounded = false;
         }
 
-        // --- Horizontal Movement ---
+        // Horizontal Movement
         const direction = new THREE.Vector3();
         
         // Get forward and right vectors relative to the player's rotation

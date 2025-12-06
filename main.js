@@ -236,7 +236,7 @@ function animate() {
         // Simple swing animation: move forward and back
         const swingAngle = Math.sin(swingProgress * Math.PI) * -Math.PI / 2;
         
-        // Explicit matrix transformations to animate the hammer rotation
+        // Matrix transformations to animate the hammer rotation
         const rotY = new THREE.Matrix4().makeRotationY(Math.PI / 2); // Base rotation
         const rotZ = new THREE.Matrix4().makeRotationZ(swingAngle);  // Swing rotation
         const combinedMatrix = rotY.multiply(rotZ);                  // Combine Y * Z
@@ -361,10 +361,9 @@ const sharedExplosionMaterial = new THREE.MeshStandardMaterial({
 });
 
 // Warm up the renderer with a dummy explosion object
-// This forces the shader for transparent emissive objects to compile immediately
 const dummyExplosion = new THREE.Mesh(sharedExplosionGeometry, sharedExplosionMaterial);
 dummyExplosion.position.set(0, -1000, 0); // Hide it
-dummyExplosion.frustumCulled = false; // Force it to be "rendered" even if off-screen (though Three.js might still cull it)
+dummyExplosion.frustumCulled = false; // Force it to be rendered even if off-screen
 scene.add(dummyExplosion);
 
 function createExplosionEffect(position, color, emissive, explosionEffectRadius) {
@@ -548,7 +547,7 @@ function updatePhysics(time) {
     if (scene.userData.physicsObjects.length === 0) return;
 
     const gravity = new THREE.Vector3(0, -20, 0);
-    const floorY = 0.5; // Assuming cubes are size 1 and floor is at 0
+    const floorY = 0.5; // Cubes are size 1 and floor is at 0
     const voxelMap = worldGroup.userData.voxelMap;
 
     for (let i = scene.userData.physicsObjects.length - 1; i >= 0; i--) {
@@ -609,7 +608,7 @@ function updatePhysics(time) {
              obj.userData.boundingBox.setFromObject(obj);
         }
 
-        // Check collision with Static World (InstancedMesh)
+        // Check collision with Static World
         if (voxelMap) {
             // Check the voxel at the object's position
             const checkX = Math.round(obj.position.x);
@@ -619,7 +618,6 @@ function updatePhysics(time) {
 
             if (voxelMap.has(key)) {
                 // Collision with static voxel
-                
                 if (obj.userData.isGrenade) {
                     const multiplier = isNukeMode ? 2.5 : 1.0;
                     triggerExplosion(obj.position, grenadeExplosionForce * multiplier, grenadeExplosionRadius * multiplier);
@@ -648,7 +646,7 @@ function updatePhysics(time) {
                     // Just bounce
                     obj.userData.velocity.multiplyScalar(-0.5);
                     
-                    // Push out towards previous position (approximate)
+                    // Push out towards previous position
                     const pushDir = obj.userData.velocity.clone().normalize().negate();
                     if (pushDir.lengthSq() === 0) pushDir.set(0,1,0);
                     obj.position.add(pushDir.multiplyScalar(0.5));
