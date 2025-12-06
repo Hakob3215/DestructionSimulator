@@ -883,7 +883,7 @@ function resetScene() {
     scene.userData.physicsObjects = [];
     scene.userData.staticVoxels = null; 
 
-    // Reset player
+    // Reset the player
     playerObject.position.copy(currentSpawn);
     playerObject.rotation.copy(defaultPlayerRotation);
 }
