@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>Destruction Simulator</title>
+		<style>
+			body { margin: 0; }
+		</style>
+		<script type="module" crossorigin src="./assets/index-BOLelTzp.js"></script>
+	</head>
+	<body>
+		<svg id="crosshair" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 100;" width="20" height="20" viewBox="0 0 20 20">
+			<line x1="10" y1="0" x2="10" y2="20" stroke="white" stroke-width="2" style="filter: drop-shadow(0px 0px 1px black);" />
+			<line x1="0" y1="10" x2="20" y2="10" stroke="white" stroke-width="2" style="filter: drop-shadow(0px 0px 1px black);" />
+		</svg>
+		<div id="destruction-meter-container" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 300px; height: 30px; background-color: rgba(0,0,0,0.5); border: 2px solid white; border-radius: 15px; overflow: hidden; z-index: 100;">
+			<div id="destruction-bar" style="width: 0%; height: 100%; background-color: red; transition: width 0.2s;"></div>
+			<div id="destruction-text" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-family: sans-serif; font-weight: bold; text-shadow: 1px 1px 2px black; pointer-events: none;">Destruction: 0%</div>
+		</div>
+
+	</body>
+</html>
