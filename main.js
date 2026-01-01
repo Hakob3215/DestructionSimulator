@@ -186,33 +186,33 @@ scene.add(playerHelper);
 // Loads sound files
 // SFX for swinging hammer
 const hammerSwingSound = new THREE.Audio(listener);
-audioLoader.load('./src/Audio/SFX/hammerSwing.mp3', function( buffer ) {
+audioLoader.load('Audio/SFX/hammerSwing.mp3', function( buffer ) {
     hammerSwingSound.setBuffer(buffer);
     hammerSwingSound.setLoop(false);
     hammerSwingSound.setVolume(1.0);
 });
 // SFX for hitting stone object
 const rockSmashSound = new THREE.Audio(listener);
-audioLoader.load('./src/Audio/SFX/rockSmash.mp3', function( buffer ) {
+audioLoader.load('Audio/SFX/rockSmash.mp3', function( buffer ) {
     rockSmashSound.setBuffer(buffer);
     rockSmashSound.setLoop(false);
     rockSmashSound.setVolume(1.0);
 });
 // Grenade Throw SFX
 const grenadeThrowSound = new THREE.Audio(listener);
-audioLoader.load('./src/Audio/SFX/throw.mp3', function( buffer ) {
+audioLoader.load('Audio/SFX/throw.mp3', function( buffer ) {
     grenadeThrowSound.setBuffer(buffer);
     grenadeThrowSound.setLoop(false);
     grenadeThrowSound.setVolume(1.0);
 });
 // Fuse burn SFX
 let fuseBurnBuffer = null;
-audioLoader.load('./src/Audio/SFX/fuseBurn.mp3', buffer => {
+audioLoader.load('Audio/SFX/fuseBurn.mp3', buffer => {
     fuseBurnBuffer = buffer;
 });
 // Explosion SFX
 let explosionBuffer = null;
-audioLoader.load('./src/Audio/SFX/explosion.wav', buffer => {
+audioLoader.load('Audio/SFX/explosion.wav', buffer => {
     explosionBuffer = buffer;
 });
 
@@ -563,8 +563,10 @@ function updatePhysics(time) {
                     triggerExplosion(obj.position, grenadeExplosionForce * multiplier, grenadeExplosionRadius * multiplier);
                     createExplosionEffect(obj.position, 0xff5500, 0xff2200, grenadeExplosionRadius);
                     playExplosionSoundAt(obj.position);
-                    obj.userData.fuseSound.stop();
-                    obj.userData.fuseSound.disconnect();
+                    if (obj.userData.fuseSound) {
+                        obj.userData.fuseSound.stop();
+                        obj.userData.fuseSound.disconnect();
+                    }
                 }
 
                 // Remove from scene and physics list
@@ -623,8 +625,10 @@ function updatePhysics(time) {
                     triggerExplosion(obj.position, grenadeExplosionForce * multiplier, grenadeExplosionRadius * multiplier);
                     createExplosionEffect(obj.position, 0xff5500, 0xff2200, grenadeExplosionRadius);
                     playExplosionSoundAt(obj.position);
-                    obj.userData.fuseSound.stop();
-                    obj.userData.fuseSound.disconnect();
+                    if (obj.userData.fuseSound) {
+                        obj.userData.fuseSound.stop();
+                        obj.userData.fuseSound.disconnect();
+                    }
                     if (obj.parent) obj.parent.remove(obj);
                     scene.userData.physicsObjects.splice(i, 1);
                     continue;
